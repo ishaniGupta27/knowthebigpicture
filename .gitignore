@@ -1,0 +1,47 @@
+# Generated media
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.m4v
+
+# Images (heavy generated + shared assets live in remote storage)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+*.tiff
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Env / secrets
+.env
+code/.env
+.ktt_runtime/
+secrets/knowthetimeline.secrets.json
+tools/*creds*.json
+tools/*.secret.json
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Heavy shared media lives in remote storage.
+assets/
+jobs/
+
+# Lightweight examples stay in Git.
+!job_templates/
+!job_templates/**
+
+# Keep the brand style library and prompts in Git even though assets/ is ignored.
+!assets/brand/
+!assets/brand/**
