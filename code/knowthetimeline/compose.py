@@ -70,8 +70,6 @@ def build_lockup(node, cfg, draw):
 
     headline_font = load_font(int(W * 0.072))
     kicker_font = load_font(int(W * 0.036))
-    subtitle_font = load_font(int(W * 0.036))
-    signature_font = load_font(int(W * 0.030))
 
     lines = []
 
@@ -85,15 +83,8 @@ def build_lockup(node, cfg, draw):
         lines.append((line, headline_font, (255, 255, 255, 255), 8))
     if lines:
         text, font, color, _ = lines[-1]
-        lines[-1] = (text, font, color, 24)
+        lines[-1] = (text, font, color, 0)
 
-    if node.get("subtitle"):
-        for line in wrap_text(draw, node["subtitle"], subtitle_font, max_width):
-            lines.append((line, subtitle_font, (206, 206, 206, 255), 6))
-        text, font, color, _ = lines[-1]
-        lines[-1] = (text, font, color, 26)
-
-    lines.append((settings.BRAND_SIGNATURE, signature_font, (176, 190, 210, 255), 0))
     return lines
 
 
@@ -108,8 +99,10 @@ def apply_backdrop(base, cfg, bbox):
     mode = cfg["backdrop"]
     base = base.convert("RGBA")
 
-    if mode == "full_blur":
-        base = base.filter(ImageFilter.GaussianBlur(cfg["blur_radius"])).convert("RGBA")
+    # Both full_blur and the default scrim_plate soften the background so the
+    # imagery reads as atmosphere rather than competing with the headline.
+    if mode in ("full_blur", "scrim_plate"):
+        base = base.filter(ImageFilter.GaussianBlur(cfg["blur_radius"]))
 
     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
@@ -166,6 +159,15 @@ def compose_node(node, background_path, out_path, cfg):
     for text, font, color, gap in lines:
         draw_centered(draw, cx, y, text, font, color)
         y += line_height(font) + gap
+
+    # Brand signature stands alone near the bottom-center, well clear of the
+    # headline lockup.
+    signature_font = load_font(int(W * 0.030))
+    signature_y = int(H * 0.90)
+    draw_centered(
+        draw, cx, signature_y, settings.BRAND_SIGNATURE, signature_font,
+        (176, 190, 210, 255),
+    )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     composited.convert("RGB").save(out_path, "JPEG", quality=92)
