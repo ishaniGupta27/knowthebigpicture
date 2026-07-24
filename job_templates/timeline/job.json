@@ -35,5 +35,12 @@
     "category_id": "25",
     "made_for_kids": false,
     "contains_synthetic_media": true
+  },
+  "instagram": {
+    "enabled": false,
+    "publish_mode": "container_only",
+    "caption": null,
+    "hashtags": [],
+    "video_url": null
   }
 }

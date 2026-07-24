@@ -85,7 +85,7 @@ def validate_job(job):
             "source generated (step 0)."
         )
 
-    for name in ("story", "parse", "images", "compose", "video", "youtube"):
+    for name in ("story", "parse", "images", "compose", "video", "youtube", "instagram"):
         if name in job.config and not isinstance(job.config[name], dict):
             raise KttError(f"job.json section '{name}' must be an object")
 
@@ -164,3 +164,7 @@ def story_overrides(job):
 
 def youtube_settings(job):
     return job.section("youtube")
+
+
+def instagram_settings(job):
+    return job.section("instagram")

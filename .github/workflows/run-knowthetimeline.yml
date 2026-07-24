@@ -26,6 +26,11 @@ on:
         required: true
         default: false
         type: boolean
+      publish_instagram:
+        description: "Publish the timeline as an Instagram Reel (uses instagram.publish_mode in job.json)"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -45,6 +50,7 @@ jobs:
       KTT_JOB_ID: ${{ inputs.job_id }}
       KTT_EXECUTION_MODE: ${{ inputs.execution_mode }}
       KTT_PUBLISH_YOUTUBE: ${{ inputs.publish_youtube }}
+      KTT_PUBLISH_INSTAGRAM: ${{ inputs.publish_instagram }}
 
     steps:
       - name: 01 Checkout repository
@@ -56,6 +62,7 @@ jobs:
           echo "Remote root: ${KTT_REMOTE_ROOT}"
           echo "Execution mode: ${KTT_EXECUTION_MODE}"
           echo "Publish YouTube: ${KTT_PUBLISH_YOUTUBE}"
+          echo "Publish Instagram: ${KTT_PUBLISH_INSTAGRAM}"
           echo "Runner: ${RUNNER_OS}"
 
       - name: 03 Set up Python
@@ -126,6 +133,20 @@ jobs:
           done
           echo "YouTube secrets are present"
 
+      - name: 10b Verify Instagram secrets for publish
+        if: ${{ inputs.execution_mode == 'real' && inputs.publish_instagram }}
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+        run: |
+          for name in INSTAGRAM_ACCESS_TOKEN INSTAGRAM_USER_ID; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub secret for publish: ${name}"
+              exit 1
+            fi
+          done
+          echo "Instagram secrets are present"
+
       - name: 11 Check remote folders
         run: |
           rclone lsd "${KTT_REMOTE_ROOT}"
@@ -163,8 +184,17 @@ jobs:
         run: |
           python -m knowthetimeline.publish "${KTT_JOB_ID}"
 
+      - name: 14b Publish Instagram Reel
+        if: ${{ inputs.execution_mode == 'real' && inputs.publish_instagram }}
+        working-directory: code
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+        run: |
+          python -m knowthetimeline.publish_instagram "${KTT_JOB_ID}"
+
       - name: 15 Push job folder after publish layer
-        if: ${{ always() && inputs.execution_mode == 'real' && inputs.publish_youtube }}
+        if: ${{ always() && inputs.execution_mode == 'real' && (inputs.publish_youtube || inputs.publish_instagram) }}
         run: |
           if [ -d "jobs/${KTT_JOB_ID}" ]; then
             rclone copy "jobs/${KTT_JOB_ID}" "${KTT_REMOTE_ROOT}/jobs/${KTT_JOB_ID}" --progress --exclude .DS_Store --exclude "**/.DS_Store" --exclude "outputs/frames/**"
@@ -191,6 +221,7 @@ jobs:
             echo "- Remote root: \`${KTT_REMOTE_ROOT}\`"
             echo "- Execution mode: \`${KTT_EXECUTION_MODE}\`"
             echo "- Publish YouTube: \`${KTT_PUBLISH_YOUTUBE}\`"
+            echo "- Publish Instagram: \`${KTT_PUBLISH_INSTAGRAM}\`"
             echo ""
             echo "### Local Status"
             echo ""
@@ -210,6 +241,16 @@ jobs:
               echo '```'
             else
               echo "No YouTube upload result."
+            fi
+            echo ""
+            echo "### Instagram"
+            echo ""
+            if [ -f "jobs/${KTT_JOB_ID}/outputs/instagram_upload.json" ]; then
+              echo '```json'
+              cat "jobs/${KTT_JOB_ID}/outputs/instagram_upload.json"
+              echo '```'
+            else
+              echo "No Instagram publish result."
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
 

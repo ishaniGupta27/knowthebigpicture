@@ -2,6 +2,7 @@ from .compose import run_compose
 from .content import write_content
 from .dry_run import mock_images, mock_parse
 from .images import run_images
+from .instagram import publish_reel
 from .job import youtube_settings
 from .parse import run_parse
 from .renderplan import build_render_plan
@@ -22,7 +23,16 @@ def log_kv(label, value):
     print(f"{label}: {value}")
 
 
-def run_job(job, dry_run=False, publish=True, force=False, lite=False):
+def run_job(
+    job,
+    dry_run=False,
+    publish_youtube=True,
+    publish_instagram=True,
+    force=False,
+    lite=False,
+    remote_root=None,
+    rclone_bin=None,
+):
     job.outputs_dir.mkdir(parents=True, exist_ok=True)
     job.logs_dir.mkdir(parents=True, exist_ok=True)
     write_status(job, "running", dry_run=dry_run, lite=lite)
@@ -82,14 +92,30 @@ def run_job(job, dry_run=False, publish=True, force=False, lite=False):
         }
 
         youtube = youtube_settings(job)
-        if publish and not dry_run and youtube.get("enabled", False):
-            log_section("STAGE 6  PUBLISH")
+        instagram = job.section("instagram")
+        published_any = False
+
+        if not dry_run and publish_youtube and youtube.get("enabled", False):
+            log_section("STAGE 6  PUBLISH YOUTUBE")
             result_path = publish_short(job)
             outputs["youtube_upload"] = str(result_path)
-        else:
-            reason = "dry-run" if dry_run else (
-                "not requested" if not publish else "youtube.enabled is false"
+            published_any = True
+
+        if not dry_run and publish_instagram and instagram.get("enabled", False):
+            log_section("STAGE 6  PUBLISH INSTAGRAM")
+            result_path = publish_reel(
+                job, remote_root=remote_root, rclone_bin=rclone_bin
             )
+            outputs["instagram_upload"] = str(result_path)
+            published_any = True
+
+        if not published_any:
+            if dry_run:
+                reason = "dry-run"
+            elif not (publish_youtube or publish_instagram):
+                reason = "not requested"
+            else:
+                reason = "no requested platform enabled (youtube.enabled / instagram.enabled)"
             print(f"\nSTAGE 6  PUBLISH skipped ({reason})")
 
     except Exception as e:

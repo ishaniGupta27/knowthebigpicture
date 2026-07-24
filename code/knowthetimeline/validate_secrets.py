@@ -61,6 +61,27 @@ def validate_youtube():
     print(f"OK YouTube refresh token exchanged: {masked(token)}")
 
 
+def validate_instagram():
+    import requests
+
+    token = require_present("INSTAGRAM_ACCESS_TOKEN")
+    ig_user_id = require_present("INSTAGRAM_USER_ID")
+
+    version = os.environ.get("IG_GRAPH_VERSION") or "v21.0"
+    response = requests.get(
+        f"https://graph.facebook.com/{version}/{ig_user_id}",
+        params={"fields": "username", "access_token": token},
+        timeout=60,
+    )
+    if response.status_code >= 400:
+        raise KttError(
+            f"Instagram validation failed: HTTP {response.status_code}: "
+            f"{response.text[:500]}"
+        )
+    username = response.json().get("username")
+    print(f"OK Instagram token validated for account: @{username}")
+
+
 def validate_rclone(remote_root):
     require_present("RCLONE_CONFIG")
     configure_rclone_from_secret()
@@ -86,6 +107,7 @@ def main(argv=None):
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--openai", action="store_true")
     parser.add_argument("--youtube", action="store_true")
+    parser.add_argument("--instagram", action="store_true")
     parser.add_argument("--rclone", action="store_true")
     parser.add_argument(
         "--remote-root",
@@ -93,7 +115,7 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    if not any([args.all, args.openai, args.youtube, args.rclone]):
+    if not any([args.all, args.openai, args.youtube, args.instagram, args.rclone]):
         args.openai = True
         args.youtube = True
 
@@ -102,6 +124,8 @@ def main(argv=None):
             validate_openai()
         if args.all or args.youtube:
             validate_youtube()
+        if args.all or args.instagram:
+            validate_instagram()
         if args.all or args.rclone:
             validate_rclone(args.remote_root)
     except KttError as e:

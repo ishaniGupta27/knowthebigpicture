@@ -47,7 +47,19 @@ def parse_args(argv):
     parser.add_argument(
         "--no-publish",
         action="store_true",
-        help="Never publish to YouTube even if youtube.enabled is true.",
+        help="Never publish to any platform, even if a platform is enabled.",
+    )
+    parser.add_argument(
+        "--youtube",
+        action="store_true",
+        help="Publish only to YouTube this run (skip Instagram). Combine with "
+        "--instagram to publish to both.",
+    )
+    parser.add_argument(
+        "--instagram",
+        action="store_true",
+        help="Publish only to Instagram this run (skip YouTube). Combine with "
+        "--youtube to publish to both.",
     )
     parser.add_argument(
         "--force",
@@ -55,6 +67,16 @@ def parse_args(argv):
         help="Ignore cached timeline.json and re-run parsing.",
     )
     return parser.parse_args(argv)
+
+
+def resolve_publish_targets(args):
+    if args.no_publish:
+        return False, False
+    # If the user names specific platforms, publish only those; otherwise
+    # default to every platform enabled in job.json.
+    if args.youtube or args.instagram:
+        return bool(args.youtube), bool(args.instagram)
+    return True, True
 
 
 def resolve_remote_root(value):
@@ -91,12 +113,16 @@ def main(argv=None):
                 )
 
             job = load_job(args.job_id, jobs_root)
+            publish_youtube, publish_instagram = resolve_publish_targets(args)
             run_job(
                 job,
                 dry_run=args.dry_run,
-                publish=not args.no_publish,
+                publish_youtube=publish_youtube,
+                publish_instagram=publish_instagram,
                 force=args.force,
                 lite=args.lite,
+                remote_root=remote_root,
+                rclone_bin=rclone_bin,
             )
 
             if remote_root:
