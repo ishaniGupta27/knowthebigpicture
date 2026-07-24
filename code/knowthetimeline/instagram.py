@@ -12,7 +12,8 @@ from .youtube import load_youtube_metadata
 
 
 UPLOAD_RESULT_FILE = "instagram_upload.json"
-GRAPH_API_BASE = "https://graph.facebook.com"
+FACEBOOK_GRAPH_BASE = "https://graph.facebook.com"
+INSTAGRAM_GRAPH_BASE = "https://graph.instagram.com"
 DEFAULT_GRAPH_VERSION = "v21.0"
 
 MAX_CAPTION_LENGTH = 2200
@@ -45,9 +46,37 @@ def graph_version():
     return os.environ.get("IG_GRAPH_VERSION") or DEFAULT_GRAPH_VERSION
 
 
-def graph_url(*parts):
+def graph_base(token):
+    # "Instagram API with Instagram Login" tokens start with "IG" and must use
+    # graph.instagram.com. Facebook-login tokens start with "EAA" and use
+    # graph.facebook.com.
+    return INSTAGRAM_GRAPH_BASE if token.startswith("IG") else FACEBOOK_GRAPH_BASE
+
+
+def graph_url(base, *parts):
     suffix = "/".join(str(part).strip("/") for part in parts if str(part).strip("/"))
-    return f"{GRAPH_API_BASE}/{graph_version()}/{suffix}"
+    return f"{base}/{graph_version()}/{suffix}"
+
+
+def resolve_ig_user_id(base, token, configured):
+    if configured and str(configured).strip().isdigit():
+        return str(configured).strip()
+
+    # Instagram-login tokens can resolve their own numeric id from /me.
+    if base == INSTAGRAM_GRAPH_BASE:
+        payload = _get(
+            graph_url(base, "me"),
+            {"fields": "user_id,username", "access_token": token},
+        )
+        uid = payload.get("user_id") or payload.get("id")
+        if uid:
+            return str(uid)
+
+    raise KttError(
+        "INSTAGRAM_USER_ID must be the numeric Instagram account id "
+        f"(got {configured!r}). For Facebook-login tokens use the IG Business "
+        "account id; for Instagram-login tokens it can be auto-resolved."
+    )
 
 
 def validate_instagram_config(job):
@@ -179,9 +208,9 @@ def _get(url, params):
     return response.json()
 
 
-def create_reel_container(ig_user_id, video_url, caption, token):
+def create_reel_container(base, ig_user_id, video_url, caption, token):
     payload = _post(
-        graph_url(ig_user_id, "media"),
+        graph_url(base, ig_user_id, "media"),
         {
             "media_type": "REELS",
             "video_url": video_url,
@@ -195,12 +224,12 @@ def create_reel_container(ig_user_id, video_url, caption, token):
     return creation_id
 
 
-def poll_container(creation_id, token):
+def poll_container(base, creation_id, token):
     deadline = time.monotonic() + POLL_TIMEOUT_SECONDS
     last_status = None
     while time.monotonic() < deadline:
         payload = _get(
-            graph_url(creation_id),
+            graph_url(base, creation_id),
             {"fields": "status_code,status", "access_token": token},
         )
         status_code = payload.get("status_code")
@@ -220,9 +249,9 @@ def poll_container(creation_id, token):
     )
 
 
-def publish_container(ig_user_id, creation_id, token):
+def publish_container(base, ig_user_id, creation_id, token):
     payload = _post(
-        graph_url(ig_user_id, "media_publish"),
+        graph_url(base, ig_user_id, "media_publish"),
         {"creation_id": creation_id, "access_token": token},
     )
     media_id = payload.get("id")
@@ -231,10 +260,10 @@ def publish_container(ig_user_id, creation_id, token):
     return media_id
 
 
-def fetch_permalink(media_id, token):
+def fetch_permalink(base, media_id, token):
     try:
         payload = _get(
-            graph_url(media_id),
+            graph_url(base, media_id),
             {"fields": "permalink", "access_token": token},
         )
         return payload.get("permalink")
@@ -263,20 +292,24 @@ def publish_reel(job, remote_root=None, rclone_bin=None, force=False):
     instagram = validate_instagram_config(job)
     mode = instagram.get("publish_mode", PUBLISH_MODE_CONTAINER_ONLY)
 
-    token = secret_value("INSTAGRAM_ACCESS_TOKEN", required=True)
-    ig_user_id = secret_value("INSTAGRAM_USER_ID", required=True)
+    token = secret_value("INSTAGRAM_ACCESS_TOKEN", required=True).strip()
+    configured_id = secret_value("INSTAGRAM_USER_ID")
+    base = graph_base(token)
+    ig_user_id = resolve_ig_user_id(base, token, configured_id)
 
     caption = build_caption(job)
     video_url = resolve_video_url(job, remote_root=remote_root, rclone_bin=rclone_bin)
 
     print("Publishing Instagram Reel")
     print(f"Mode: {mode}")
+    print(f"Graph host: {base}")
+    print(f"IG user id: {ig_user_id}")
     print(f"Video URL: {video_url}")
     print(f"Caption:\n{caption}")
 
-    creation_id = create_reel_container(ig_user_id, video_url, caption, token)
+    creation_id = create_reel_container(base, ig_user_id, video_url, caption, token)
     print(f"Container created: {creation_id}")
-    poll_container(creation_id, token)
+    poll_container(base, creation_id, token)
     print("Container ready (FINISHED)")
 
     result = {
@@ -288,8 +321,8 @@ def publish_reel(job, remote_root=None, rclone_bin=None, force=False):
     }
 
     if mode == PUBLISH_MODE_LIVE:
-        media_id = publish_container(ig_user_id, creation_id, token)
-        permalink = fetch_permalink(media_id, token)
+        media_id = publish_container(base, ig_user_id, creation_id, token)
+        permalink = fetch_permalink(base, media_id, token)
         result.update(
             {
                 "status": "published",

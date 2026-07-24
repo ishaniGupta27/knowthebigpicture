@@ -6,7 +6,6 @@ from .env import load_dotenv_if_present
 from .errors import KttError
 from .remote import configure_rclone_from_secret, rclone_bin_from_env
 from .secrets import secret_value
-from .youtube import access_token
 
 
 def masked(value):
@@ -54,6 +53,8 @@ def validate_openai():
 
 
 def validate_youtube():
+    from .youtube import access_token
+
     require_present("YOUTUBE_CLIENT_ID")
     require_present("YOUTUBE_CLIENT_SECRET")
     require_present("YOUTUBE_REFRESH_TOKEN")
@@ -64,13 +65,21 @@ def validate_youtube():
 def validate_instagram():
     import requests
 
-    token = require_present("INSTAGRAM_ACCESS_TOKEN")
-    ig_user_id = require_present("INSTAGRAM_USER_ID")
+    token = require_present("INSTAGRAM_ACCESS_TOKEN").strip()
+    configured_id = secret_value("INSTAGRAM_USER_ID")
 
+    # Instagram-login tokens start with "IG" and use graph.instagram.com;
+    # Facebook-login tokens start with "EAA" and use graph.facebook.com.
+    base = (
+        "https://graph.instagram.com"
+        if token.startswith("IG")
+        else "https://graph.facebook.com"
+    )
     version = os.environ.get("IG_GRAPH_VERSION") or "v21.0"
+
     response = requests.get(
-        f"https://graph.facebook.com/{version}/{ig_user_id}",
-        params={"fields": "username", "access_token": token},
+        f"{base}/{version}/me",
+        params={"fields": "user_id,username", "access_token": token},
         timeout=60,
     )
     if response.status_code >= 400:
@@ -78,8 +87,15 @@ def validate_instagram():
             f"Instagram validation failed: HTTP {response.status_code}: "
             f"{response.text[:500]}"
         )
-    username = response.json().get("username")
-    print(f"OK Instagram token validated for account: @{username}")
+    data = response.json()
+    resolved_id = data.get("user_id") or data.get("id")
+    print(f"OK Instagram token validated ({base})")
+    print(f"OK Instagram account: @{data.get('username')} (user_id={resolved_id})")
+    if configured_id and not str(configured_id).strip().isdigit():
+        print(
+            f"NOTE INSTAGRAM_USER_ID is {configured_id!r}; set it to the numeric "
+            f"id {resolved_id} (or leave it and it will be auto-resolved)."
+        )
 
 
 def validate_rclone(remote_root):
