@@ -13,11 +13,13 @@ class Job:
     config: dict
     inputs_dir: Path
     source_path: Path
+    headline_path: Path
     outputs_dir: Path
     logs_dir: Path
     status_path: Path
     timeline_path: Path
     metadata_path: Path
+    content_path: Path
     render_plan_path: Path
     backgrounds_dir: Path
     frames_dir: Path
@@ -58,11 +60,13 @@ def load_job(job_id, jobs_root):
         config=config,
         inputs_dir=root / "inputs",
         source_path=source_path,
+        headline_path=root / "inputs" / "headline.txt",
         outputs_dir=outputs_dir,
         logs_dir=root / "logs",
         status_path=root / "status.json",
         timeline_path=outputs_dir / "timeline.json",
         metadata_path=outputs_dir / "youtube_metadata.json",
+        content_path=outputs_dir / "content.json",
         render_plan_path=outputs_dir / "render_plan.json",
         backgrounds_dir=outputs_dir / "backgrounds",
         frames_dir=outputs_dir / "frames",
@@ -74,10 +78,11 @@ def load_job(job_id, jobs_root):
 
 
 def validate_job(job):
-    if not job.source_path.is_file():
+    if not job.source_path.is_file() and not job.headline_path.is_file():
         raise KttError(
-            f"Missing required author input: {job.source_path}. "
-            "The author must provide inputs/source.txt."
+            f"Missing required author input under {job.inputs_dir}. "
+            "Provide inputs/source.txt, or inputs/headline.txt to have the "
+            "source generated (step 0)."
         )
 
     for name in ("story", "parse", "images", "compose", "video", "youtube"):
@@ -126,6 +131,7 @@ def compose_settings(job):
         "show_date_kicker": bool(
             compose.get("show_date_kicker", settings.DEFAULT_SHOW_DATE_KICKER)
         ),
+        "show_detail": bool(compose.get("show_detail", settings.DEFAULT_SHOW_DETAIL)),
     }
 
 

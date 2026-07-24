@@ -1,4 +1,5 @@
 import json
+import re
 
 from .errors import InsufficientSourceError, KttError
 from .job import parse_settings, story_overrides
@@ -8,6 +9,22 @@ from .status import utc_now
 
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 
+# Markdown link [label](url) -> label, and bare citation markers like [1, 2, 3].
+_MD_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_CITATION_RE = re.compile(r"\[\d+(?:\s*,\s*\d+)*\]")
+
+
+def sanitize_source(text):
+    """Strip pasted markdown/citation junk so quotes stay clean and verifiable.
+
+    Applied identically before parsing and before verification so the LLM's
+    verbatim source_quote reliably matches the source it was given.
+    """
+    text = _MD_LINK_RE.sub(r"\1", text)
+    text = _CITATION_RE.sub("", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text
+
 
 def load_system_prompt():
     path = settings.PROMPTS_DIR / "parse_system_prompt.txt"
@@ -15,7 +32,7 @@ def load_system_prompt():
 
 
 def read_source(job):
-    text = job.source_path.read_text()
+    text = sanitize_source(job.source_path.read_text())
     if not text.strip():
         raise KttError(f"Source file is empty: {job.source_path}")
     return text
@@ -107,6 +124,7 @@ def normalize_nodes(raw_nodes):
             "role": role,
             "subtitle": raw.get("subtitle"),
             "headline": (raw.get("headline") or "").strip(),
+            "detail": (raw.get("detail") or "").strip() or None,
             "event_date": raw.get("event_date"),
             "event_date_display": raw.get("event_date_display"),
             "source_quote": raw.get("source_quote"),

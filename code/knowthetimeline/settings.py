@@ -49,7 +49,7 @@ DATED_ROLES = (
 DEFAULT_PARSE_MODEL = "gpt-5-mini"
 DEFAULT_MIN_DEVELOPMENTS = 3
 DEFAULT_MAX_DEVELOPMENTS = 6
-MAX_WORDS_PER_HEADLINE = 12
+MAX_WORDS_PER_HEADLINE = 16
 
 # --- Image defaults ----------------------------------------------------------
 DEFAULT_IMAGE_MODEL = "gpt-image-1"
@@ -74,9 +74,10 @@ IMAGE_TECHNICAL_RULES = (
 
 # --- Compose (Pillow) defaults ----------------------------------------------
 DEFAULT_BACKDROP = "scrim_plate"  # scrim_plate | full_blur | plate_only
-DEFAULT_BLUR_RADIUS = 15
+DEFAULT_BLUR_RADIUS = 5
 DEFAULT_PLATE_OPACITY = 0.45
 DEFAULT_SHOW_DATE_KICKER = True
+DEFAULT_SHOW_DETAIL = True
 BRAND_SIGNATURE = "KnowTheTimeline"
 
 # Safe-zone margins as fractions of the canvas (avoid platform UI overlays).

@@ -13,12 +13,13 @@ on:
         default: "gdrive:knowthetimeline"
         type: string
       execution_mode:
-        description: "Use dry_run for plumbing tests, real for OpenAI generation"
+        description: "dry_run = offline plumbing; lite = content only (no images); real = full render"
         required: true
         default: "dry_run"
         type: choice
         options:
           - dry_run
+          - lite
           - real
       publish_youtube:
         description: "Upload the timeline as a private YouTube Short"
@@ -99,13 +100,13 @@ jobs:
           chmod 600 "${HOME}/.config/rclone/rclone.conf"
           echo "rclone config written"
 
-      - name: 09 Verify OpenAI secret for real runs
-        if: ${{ inputs.execution_mode == 'real' }}
+      - name: 09 Verify OpenAI secret for real/lite runs
+        if: ${{ inputs.execution_mode == 'real' || inputs.execution_mode == 'lite' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [ -z "${OPENAI_API_KEY}" ]; then
-            echo "Missing required GitHub secret for real runs: OPENAI_API_KEY"
+            echo "Missing required GitHub secret for real/lite runs: OPENAI_API_KEY"
             exit 1
           fi
           echo "OPENAI_API_KEY is present"
@@ -135,6 +136,14 @@ jobs:
         working-directory: code
         run: |
           python -m knowthetimeline.run "${KTT_JOB_ID}" --remote --dry-run
+
+      - name: 12b Run lite job (content only, no images)
+        if: ${{ inputs.execution_mode == 'lite' }}
+        working-directory: code
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python -m knowthetimeline.run "${KTT_JOB_ID}" --remote --lite
 
       - name: 13 Run real job (render, no publish)
         if: ${{ inputs.execution_mode == 'real' }}

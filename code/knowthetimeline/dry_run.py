@@ -3,7 +3,7 @@ import re
 from .job import parse_settings, story_overrides
 from .images import make_neutral_background
 from .job import image_settings
-from .parse import write_json
+from .parse import sanitize_source, write_json
 from . import settings
 from .status import utc_now
 
@@ -74,7 +74,7 @@ def mock_parse(job, force=False):
 
     cfg = parse_settings(job)
     overrides = story_overrides(job)
-    text = job.source_path.read_text()
+    text = sanitize_source(job.source_path.read_text())
     sentences = split_sentences(text)
 
     hook_sentence = sentences[0] if sentences else "How did we get here?"
@@ -108,6 +108,13 @@ def mock_parse(job, force=False):
         keep_head = dated[: 1 + max_dev]
         dated = keep_head + [dated[-1]]
 
+    def make_detail(headline_text, full_sentence):
+        # Mock "detail" = the remainder of the sentence after the headline words,
+        # so lite dry-runs exercise the two-tier (headline + detail) layout.
+        remainder = full_sentence.split()[settings.MAX_WORDS_PER_HEADLINE:]
+        detail = " ".join(remainder[:25]).strip().strip(",.;:")
+        return detail or first_words(full_sentence, 25)
+
     def make_node(node_id, role, headline, source_quote, iso=None, display=None,
                   subtitle=None, priority=None):
         node = {
@@ -115,6 +122,7 @@ def mock_parse(job, force=False):
             "role": role,
             "subtitle": subtitle,
             "headline": first_words(headline),
+            "detail": make_detail(headline, headline),
             "event_date": iso,
             "event_date_display": display,
             "source_quote": source_quote,

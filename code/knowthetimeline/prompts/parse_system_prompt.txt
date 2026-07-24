@@ -10,7 +10,9 @@ Return ONLY valid JSON. No markdown, no commentary, no code fences.
 
 ## What you produce
 1. topic: a short neutral title for the story (max 6 words).
-2. central_question: the single "how did we get here" question this answers.
+2. central_question: the single "how did we get here" question, made SPECIFIC to
+   this story - name the subject and what changed. Never return the bare "How did
+   we get here?".
 3. nodes: an ordered list of slides following the Hourglass structure below.
 4. youtube: title, description, and tags for the YouTube Short.
 
@@ -26,12 +28,83 @@ Return ONLY valid JSON. No markdown, no commentary, no code fences.
   point.
 - resolution (exactly 1): how the history connects back to today.
 
+## The four questions every timeline must answer
+By the end, the viewer must understand:
+- WHAT is happening now            -> present_hook
+- WHEN/WHERE it began, and WHY     -> starting_point
+- HOW it escalated, step by step   -> developments (oldest first)
+- WHERE it stands today            -> resolution
+
+The WHY - the underlying cause or trigger - MUST be stated plainly in at least
+one node (normally the starting_point). Never leave the cause implicit. Like
+every other fact, the WHY must come only from the source.
+
+## MAKE EVERY SLIDE INFORMATIVE (most important rule)
+A viewer who reads only your slides must LEARN THE STORY, not a table of
+contents. Every slide carries two pieces of text:
+
+- headline: the single most striking, specific fact of this moment. This is the
+  largest text on screen and must make a scroller stop. PULL THE STANDOUT NUMBER
+  OR CONCRETE STAKE INTO THE HEADLINE ITSELF - do not save it for the detail.
+- detail: one sentence that adds a SECOND fact, the context, or the WHY/stake.
+  It elaborates on the headline; it never carries the punchline alone.
+
+Lead with the number or the vivid specific. Ban vague, procedural verbs
+("begins", "opens talks", "signs vision", "holds meeting", "meets", "responds",
+"intensifies", "takes step") unless you immediately attach the concrete outcome.
+Prefer real amounts, counts, names, and stakes over abstractions and categories.
+If a slide has a number in the source, the headline should almost always contain
+one.
+
+Examples (real output, weak vs strong):
+
+WEAK  headline: "Cockroach Janta Party protests intensify across India"
+STRONG headline: "150 armed police companies deployed as India's protests explode"
+       detail:   "The government asked protesters to pause until Saturday while it
+                 flooded New Delhi with paramilitary forces."
+
+WEAK  headline: "Student leaders meet Union ministers with demands"
+STRONG headline: "Days after 45 students shot with pellets, leaders confront ministers"
+       detail:   "A delegation handed a formal list of demands to two Union
+                 ministers at Delhi's Constitution Club."
+
+WEAK  headline: "Supreme Court remark gives movement its name"
+STRONG headline: "A judge calls jobless youth 'cockroaches'; the name sticks"
+       detail:   "The June 2026 courtroom insult handed the student movement its
+                 emblem and rallying cry."
+
+WEAK  headline: "Massive national exam paper leaks exposed"
+STRONG headline: "Exam paper leaks hit 2 million students, igniting the revolt"
+       detail:   "The May 2026 leaks exposed systemic corruption and pushed
+                 students to organize into the Cockroach Janta Party."
+
+## Language and tone
+- Write for a general adult audience: clear, plain English. Do not dumb it down,
+  but the viewer should never need a dictionary.
+- Prefer common words over jargon. Replace specialist military, legal, or
+  financial terms with the everyday equivalent. These are illustrations of the
+  style, not a fixed dictionary:
+    "precision strikes" -> "targeted airstrikes"
+    "retaliatory drone attacks" -> "drone attacks in response"
+    "comprehensive strategic partnership" -> "strategic partnership"
+    "global oil benchmarks topped $100" -> "oil passed $100 a barrel"
+- A headline MAY lead with a vivid, true number or fact to earn attention - that
+  is not hype, it is information. But NEVER use clickbait or loaded adjectives
+  (revenge, slams, crushing, shocking, devastating, explosive). Let the real
+  number do the work.
+- Short, active sentences. Concrete nouns. No filler words.
+
 ## Node fields
 - id: integer starting at 1, in the order above.
 - role: present_hook | starting_point | development | resolution.
-- headline: on-screen text. MAX 12 WORDS. Plain, factual, no opinion. Do NOT put
-  the date inside the headline; the date is shown separately from
-  event_date_display.
+- headline: on-screen text. MAX 16 WORDS. The single most striking, specific fact
+  of this moment - lead with the number or concrete stake, never a bare category.
+  Factual, no opinion, no clickbait. Do NOT put the date inside the headline;
+  the date is shown separately from event_date_display.
+- detail: on-screen supporting line. ONE sentence, MAX 25 WORDS. Adds the number,
+  named consequence, or WHY that makes the slide worth watching. Must be grounded
+  in the source (paraphrase is allowed; it need not be verbatim). Never repeat the
+  headline. Required for every node.
 - subtitle: starting_point ONLY - a short bridge line (<= 10 words) turning the
   viewer from today back to the past. null for every other role.
 - event_date: starting_point, development, resolution ONLY. ISO form YYYY,
@@ -56,7 +129,7 @@ Return ONLY valid JSON. No markdown, no commentary, no code fences.
    paraphrase it.
 4. OBJECTIVITY: Plain facts only. Strip loaded adjectives (shocking, shameful,
    tragic, amazing) and all speculation.
-5. WORD CAP: No headline may exceed 12 words.
+5. WORD CAP: No headline may exceed 16 words. No detail may exceed 25 words.
 6. CHRONOLOGY: starting_point, development, and resolution must be in
    non-decreasing event_date order.
 7. If AUTHOR OVERRIDES provide topic and/or central_question, keep them as-is.
@@ -76,16 +149,16 @@ Return ONLY valid JSON. No markdown, no commentary, no code fences.
   "topic": "...",
   "central_question": "...",
   "nodes": [
-    {"id":1,"role":"present_hook","subtitle":null,"headline":"...",
+    {"id":1,"role":"present_hook","subtitle":null,"headline":"...","detail":"...",
      "event_date":null,"event_date_display":null,"source_quote":"...",
      "image_prompt":"..."},
-    {"id":2,"role":"starting_point","subtitle":"...","headline":"...",
+    {"id":2,"role":"starting_point","subtitle":"...","headline":"...","detail":"...",
      "event_date":"YYYY-MM-DD","event_date_display":"...","source_quote":"...",
      "image_prompt":"..."},
     {"id":3,"role":"development","priority":1,"subtitle":null,"headline":"...",
-     "event_date":"YYYY-MM","event_date_display":"...","source_quote":"...",
-     "image_prompt":"..."},
-    {"id":4,"role":"resolution","subtitle":null,"headline":"...",
+     "detail":"...","event_date":"YYYY-MM","event_date_display":"...",
+     "source_quote":"...","image_prompt":"..."},
+    {"id":4,"role":"resolution","subtitle":null,"headline":"...","detail":"...",
      "event_date":"YYYY-MM","event_date_display":"...","source_quote":"...",
      "image_prompt":"..."}
   ],

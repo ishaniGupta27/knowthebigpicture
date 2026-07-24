@@ -63,13 +63,24 @@ def draw_centered(draw, cx, y, text, font, fill, shadow=(0, 0, 0, 200)):
     draw.text((x, y), text, font=font, fill=fill)
 
 
+def fit_headline_font(draw, text, max_width, max_lines=4):
+    """Largest headline font (within a range) that wraps text to <= max_lines."""
+    for scale in (0.072, 0.068, 0.064, 0.060, 0.056):
+        font = load_font(int(W * scale))
+        if len(wrap_text(draw, text, font, max_width)) <= max_lines:
+            return font
+    return load_font(int(W * 0.056))
+
+
 def build_lockup(node, cfg, draw):
     """Return an ordered list of rendered lines: (text, font, color, gap_after)."""
     margin_x = int(W * settings.SAFE_MARGIN_X)
     max_width = W - 2 * margin_x
 
-    headline_font = load_font(int(W * 0.072))
+    headline = node.get("headline", "")
+    headline_font = fit_headline_font(draw, headline, max_width)
     kicker_font = load_font(int(W * 0.036))
+    detail_font = load_font(int(W * 0.036))
 
     lines = []
 
@@ -78,10 +89,18 @@ def build_lockup(node, cfg, draw):
             (node["event_date_display"].upper(), kicker_font, (214, 214, 214, 255), 18)
         )
 
-    headline = node.get("headline", "")
     for line in wrap_text(draw, headline, headline_font, max_width):
         lines.append((line, headline_font, (255, 255, 255, 255), 8))
     if lines:
+        text, font, color, _ = lines[-1]
+        lines[-1] = (text, font, color, 0)
+
+    if cfg.get("show_detail") and node.get("detail"):
+        # Small gap between the headline block and the supporting detail line.
+        text, font, color, _ = lines[-1]
+        lines[-1] = (text, font, color, 26)
+        for line in wrap_text(draw, node["detail"], detail_font, max_width):
+            lines.append((line, detail_font, (200, 207, 218, 255), 6))
         text, font, color, _ = lines[-1]
         lines[-1] = (text, font, color, 0)
 

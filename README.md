@@ -1,95 +1,78 @@
 # KnowTheTimeline
 
-An automated short-form video engine that turns a raw source document (a news
-article, court filing, or press release) into a 60-second, objective,
-chronological timeline answering one question: **"How did we get here?"**
-
-It reuses the battle-tested orchestration model from Fashionbot: heavy media
-lives in **Google Drive**, jobs run on **GitHub Actions**, and finished videos
-are published as private **YouTube Shorts**.
+Turns a news source into a 60-second, objective, chronological video answering
+one question: **"How did we get here?"** Heavy media lives in Google Drive, jobs
+run on GitHub Actions, and finished videos publish as private YouTube Shorts.
 
 ## Pipeline
 
-```
-inputs/source.txt
-      │
-  1. PARSE     LLM -> timeline.json (Hourglass structure) + youtube_metadata.json
-  2. VERIFY    mechanical fact-checks (verbatim quotes, dates, chronology, word cap)
-  3. IMAGES    one 9:16 background per node (OpenAI, parallel, vibe sandwich)
-  4. COMPOSE   Pillow lays headline + date + brand signature onto each background
-  5. RENDER    render_plan.json (natural timing) -> timeline.mp4 (MoviePy + outro + audio)
-  6. PUBLISH   private YouTube Short (upload only; metadata already generated in step 1)
-      │
-   timeline.mp4
-```
+`source -> parse -> verify -> images -> compose -> render -> publish`
 
-Each stage reads and writes files inside a numeric **job folder**, so any stage
-can be re-run and cached outputs are skipped.
+0. **source** – if only `headline.txt` exists, LLM writes `source.txt` (skipped if `source.txt` present)
+1. **parse** – LLM -> `timeline.json` + `youtube_metadata.json`
+2. **verify** – mechanical checks (verbatim quotes, dates, chronology, word cap)
+3. **images** – one 9:16 background per slide (OpenAI, parallel)
+4. **compose** – Pillow draws date + headline + detail onto each background
+5. **render** – timing plan -> `timeline.mp4` (MoviePy, + outro, + optional audio)
+6. **publish** – upload as a private YouTube Short
 
-## Job folder contract
+Everything lives in a numeric job folder; stages cache, so re-runs skip finished work:
 
 ```
-jobs/<job_id>/
-  job.json                 # optional; every setting has a default
-  inputs/
-    source.txt             # the ONLY required author input
-  outputs/
-    timeline.json          # stage 1 + stage 2 (verification written in place)
-    youtube_metadata.json  # stage 1
-    backgrounds/<id>.jpg    # stage 3
-    frames/<id>.jpg         # stage 4 (cheap local re-derivation, not synced)
-    render_plan.json        # stage 5
-    timeline.mp4            # stage 5
-    youtube_upload.json     # stage 6
-  logs/
-  status.json
+jobs/<id>/
+  job.json            # optional; every setting has a default
+  inputs/source.txt   # OR inputs/headline.txt (stage 0 expands it)
+  outputs/            # timeline.json, content.json, backgrounds/, frames/, timeline.mp4, ...
+  logs/  status.json
 ```
 
-## Local usage
+## Run it
 
 ```bash
 cd code
 python -m pip install -r requirements.txt
 
-# Offline plumbing test (mocks the LLM + image calls, still renders a real mp4):
-python -m knowthetimeline.run 1 --dry-run
-
-# Real local run (needs OPENAI_API_KEY in secrets/ or env):
-python -m knowthetimeline.run 1
-
-# Validate secrets without rendering:
+python -m knowthetimeline.run <id>            # full run (needs OPENAI_API_KEY)
 python -m knowthetimeline.validate_secrets --all
 ```
 
-Set the local jobs directory with `--jobs-dir` or the `KTT_JOBS_DIR` env var
-(defaults to `<repo>/jobs`).
+### Options
+
+| Flag | What it does |
+|------|--------------|
+| `--dry-run` | Fully offline: mocks the LLM + images, still renders a real mp4. Needs `source.txt`. |
+| `--lite` | Content only: parse + verify -> `content.json`, then stop. No images/video/publish. Cheapest way to test the writing. |
+| `--remote [root]` | Pull the job from Drive (rclone) before, push results after. Root defaults to `KTT_REMOTE_ROOT`. |
+| `--no-publish` | Render everything but never upload to YouTube. |
+| `--force` | Ignore cached `timeline.json` and re-parse. |
+| `--jobs-dir PATH` | Local jobs dir (default `<repo>/jobs`, or `KTT_JOBS_DIR`). |
+
+Common combos: `--lite` (real content, no image spend), `--dry-run --lite` (offline structure check), `--remote --no-publish` (full render on a runner, no upload).
 
 ## Remote + GitHub Actions
 
-`tools/submit_job.py` uploads a local job folder to Google Drive and dispatches
-the `Run KnowTheTimeline` workflow, which pulls the job with `rclone`, runs the
-pipeline, and pushes results back.
+`tools/submit_job.py` uploads a job folder to Drive and dispatches the workflow:
 
 ```bash
-python tools/submit_job.py --job-folder /path/to/1 --creds ~/ktt_submit_creds.json
-python tools/submit_job.py --job-folder /path/to/1 --real --publish --creds ~/ktt_submit_creds.json
+python tools/submit_job.py --job-folder /path/to/<id> --creds ~/ktt_submit_creds.json           # dry_run
+python tools/submit_job.py --job-folder /path/to/<id> --lite --creds ~/ktt_submit_creds.json     # content only
+python tools/submit_job.py --job-folder /path/to/<id> --real --publish --creds ~/ktt_submit_creds.json
 ```
+
+The workflow's `execution_mode` mirrors these: `dry_run` | `lite` | `real`.
 
 ## Secrets
 
 Copy `secrets/knowthetimeline.secrets.example.json` to
-`secrets/knowthetimeline.secrets.json` (git-ignored) or set the equivalent env
-vars / GitHub Actions secrets:
+`secrets/knowthetimeline.secrets.json` (git-ignored), or set env / Actions secrets:
 
-- `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`) — parsing and image generation
-- `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN` — publishing
+- `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`) — parsing, source, images
+- `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` / `YOUTUBE_REFRESH_TOKEN` — publishing
 - `RCLONE_CONFIG` — remote Drive sync
 
-## Author-supplied assets
+## Assets (`assets/`)
 
-- `assets/brand/styles.json` — image "vibe" library (shipped; edit to taste)
-- `assets/fonts/` — a heavy headline font (e.g. `Montserrat-Bold.ttf`)
-- `assets/outro/outro.jpg` — global outro card (a fallback is generated if absent)
-- `assets/audio/` — an optional music bed
+`brand/styles.json` (image vibes, shipped) · `fonts/` (headline font) ·
+`outro/outro.jpg` (fallback generated if absent) · `audio/` (optional music bed).
 
-See `docs/DESIGN.md` for the full design rationale behind every stage.
+See `docs/DESIGN.md` for the full design rationale.

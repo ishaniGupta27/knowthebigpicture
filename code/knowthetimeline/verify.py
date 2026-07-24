@@ -3,6 +3,7 @@ import re
 
 from .errors import VerificationError
 from .job import parse_settings
+from .parse import sanitize_source
 from . import settings
 
 
@@ -120,7 +121,7 @@ def verify_chronology(nodes):
 def run_verify(job, timeline):
     """Stage 2: mechanically check the timeline; write results in place."""
     cfg = parse_settings(job)
-    source_raw = job.source_path.read_text()
+    source_raw = sanitize_source(job.source_path.read_text())
     source_norm = normalize(source_raw)
     nodes = timeline.get("nodes", [])
 

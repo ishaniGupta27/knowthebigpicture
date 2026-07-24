@@ -49,7 +49,9 @@ and adds files to the job's `outputs/` folder.
 
 ```mermaid
 flowchart TD
-    SRC["inputs/source.txt (only author input)"] --> S1["Stage 1: PARSE (LLM)"]
+    HL["inputs/headline.txt (optional)"] --> S0["Stage 0: SOURCE (LLM, only if source.txt is missing)"]
+    S0 --> SRC["inputs/source.txt (author input)"]
+    SRC --> S1["Stage 1: PARSE (LLM)"]
     S1 --> TL["timeline.json (topic, question, nodes)"]
     TL --> S2["Stage 2: VERIFY (code)"]
     S2 --> TLV["timeline.json + verification (in place)"]
@@ -69,7 +71,9 @@ flowchart TD
 
 ### Cost profile
 
-- **P**aid (external API): Stage 1 (one LLM call producing the timeline AND the YouTube metadata), Stage 3 (image generation), Stage 6
+- **P**aid (external API): Stage 0 (optional; one LLM call to expand a headline
+into a source, only when `source.txt` is absent), Stage 1 (one LLM call producing
+the timeline AND the YouTube metadata), Stage 3 (image generation), Stage 6
 (YouTube upload only, no separate metadata LLM call).
 - **Free (local only):** Stage 2 (verification), Stage 4 (compositing), Stage 5
 (video stitching).
@@ -91,7 +95,8 @@ folder.
 ```text
 jobs/<id>/
   inputs/
-    source.txt          # ONLY required author input
+    source.txt          # author input (required unless headline.txt is provided)
+    headline.txt        # optional; if source.txt is absent, Stage 0 generates it
   job.json              # optional; overrides only
   outputs/
     timeline.json       # Stage 1 output; Stage 2 adds verification in place
@@ -119,14 +124,27 @@ numeric node id *is* the sequence; there is no separate sequence field.
 
 
 
-## 4. The Author Input: `source.txt`
+## 4. The Author Input: `source.txt` (or `headline.txt`)
 
-- The author's entire workload is writing `inputs/source.txt`.
+- The author's entire workload is providing `inputs/source.txt`.
 - It contains raw pasted text: a news article, court filing, or press release.
 - No formatting is required.
 - The system infers everything else (topic, central question, the timeline) from
 this text.
 - A job with **no** `job.json` **at all** is valid and runs on pure defaults.
+
+### Stage 0 — Source (optional)
+
+- If `source.txt` is **absent** but `inputs/headline.txt` is present, Stage 0
+makes a single LLM call that expands the one-line headline into a full
+`source.txt`, using `prompts/source_prompt.txt` as the system prompt.
+- If `source.txt` **exists**, Stage 0 is skipped entirely — no extra LLM call.
+- The generated `source.txt` is written into `inputs/` and cached like any other
+input; delete it to regenerate from a changed headline.
+- Stage 0 never runs under `--dry-run` (it would require the API); provide
+`source.txt` for offline runs.
+- The job is invalid only when **both** `source.txt` and `headline.txt` are
+missing.
 
 ---
 
@@ -467,7 +485,8 @@ A dry-run mode validates and runs the full pipeline **without external API
 calls**: it uses a canned timeline and placeholder backgrounds, but performs real
 compositing and stitching to produce a real `timeline.mp4`. It costs nothing and
 requires no API keys, and is the primary way to test structure, layout, and
-pacing.
+pacing. Because Stage 0 (source generation) requires the API, it is skipped under
+dry-run; a dry-run must be given an existing `inputs/source.txt`.
 
 ### Secrets
 

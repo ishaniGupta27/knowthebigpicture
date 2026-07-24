@@ -390,11 +390,12 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--execution-mode",
-        choices=("dry_run", "real"),
+        choices=("dry_run", "lite", "real"),
         default="dry_run",
         help="GitHub Actions execution mode.",
     )
     parser.add_argument("--real", action="store_true", help="Shortcut for --execution-mode real.")
+    parser.add_argument("--lite", action="store_true", help="Shortcut for --execution-mode lite.")
     parser.add_argument(
         "--publish",
         action="store_true",
@@ -407,7 +408,12 @@ def parse_args(argv):
 
 def main(argv=None):
     args = parse_args(argv)
-    execution_mode = "real" if args.real else args.execution_mode
+    if args.real:
+        execution_mode = "real"
+    elif args.lite:
+        execution_mode = "lite"
+    else:
+        execution_mode = args.execution_mode
 
     if not args.creds:
         print("ERROR: --creds is required or set KTT_SUBMIT_CREDS", file=sys.stderr)

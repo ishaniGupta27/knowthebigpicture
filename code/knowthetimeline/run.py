@@ -39,6 +39,12 @@ def parse_args(argv):
         help="Run the full pipeline offline with mocked LLM/image calls.",
     )
     parser.add_argument(
+        "--lite",
+        action="store_true",
+        help="Content only: run parse + verify, write content.json, and stop. "
+        "No image generation, compositing, video, or publishing.",
+    )
+    parser.add_argument(
         "--no-publish",
         action="store_true",
         help="Never publish to YouTube even if youtube.enabled is true.",
@@ -90,6 +96,7 @@ def main(argv=None):
                 dry_run=args.dry_run,
                 publish=not args.no_publish,
                 force=args.force,
+                lite=args.lite,
             )
 
             if remote_root:
