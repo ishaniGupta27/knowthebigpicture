@@ -24,14 +24,14 @@ __pycache__/
 # Env / secrets
 .env
 code/.env
-.ktt_runtime/
-secrets/knowthetimeline.secrets.json
+.kbp_runtime/
+secrets/knowthebigpicture.secrets.json
 tools/*creds*.json
 tools/*.secret.json
 
 # Virtual environments
 venv/
-.venv/
+.venv*/
 env/
 
 # Heavy shared media lives in remote storage.

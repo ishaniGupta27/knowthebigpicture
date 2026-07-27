@@ -1,0 +1,13 @@
+GPS finds your location by measuring how long radio signals take to travel from satellites to your receiver. It does not need to send your location back to the satellites.
+
+Each GPS satellite continuously broadcasts its position and the exact time the signal was sent. Your phone compares that sent time with the arrival time. Because radio waves travel at the speed of light, the delay reveals the receiver's approximate distance from that satellite.
+
+One distance measurement places the receiver somewhere on a sphere around one satellite. Signals from additional satellites narrow the possibilities where those spheres intersect. This geometric method is called trilateration.
+
+Three satellite distances can identify a point in three-dimensional space in ideal conditions. In practice, a GPS receiver normally needs at least four satellites because the inexpensive clock inside a phone is not perfectly synchronized with the atomic clocks aboard the satellites.
+
+The fourth signal lets the receiver solve for both its position and its clock error. The receiver repeatedly performs this calculation as new signals arrive, allowing maps and navigation apps to track movement.
+
+Buildings, mountains, the atmosphere, and reflected signals can slightly change travel times and reduce accuracy. Receivers improve the result by combining more satellites with correction data and sensors such as accelerometers.
+
+GPS satellites orbit roughly 20,200 kilometers above Earth. Their clocks must account for effects predicted by both special and general relativity; without those corrections, positioning errors would quickly accumulate.

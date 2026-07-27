@@ -380,7 +380,7 @@ class GitHubClient:
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description="Upload a local KnowTheTimeline job folder and trigger GitHub Actions."
+        description="Upload a local Know the Big Picture job folder and trigger GitHub Actions."
     )
     parser.add_argument(
         "--job-folder",
@@ -389,8 +389,8 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--creds",
-        default=os.environ.get("KTT_SUBMIT_CREDS"),
-        help="Path to submit creds JSON. Can also use KTT_SUBMIT_CREDS.",
+        default=os.environ.get("KBP_SUBMIT_CREDS"),
+        help="Path to submit creds JSON. Can also use KBP_SUBMIT_CREDS.",
     )
     parser.add_argument(
         "--execution-mode",
@@ -425,7 +425,7 @@ def main(argv=None):
         execution_mode = args.execution_mode
 
     if not args.creds:
-        print("ERROR: --creds is required or set KTT_SUBMIT_CREDS", file=sys.stderr)
+        print("ERROR: --creds is required or set KBP_SUBMIT_CREDS", file=sys.stderr)
         return 1
 
     try:
@@ -457,7 +457,7 @@ def main(argv=None):
             github_config = dict(github_config)
             github_config["branch"] = args.branch
 
-        remote_root = args.remote_root or creds.get("remote_root") or "gdrive:knowthetimeline"
+        remote_root = args.remote_root or creds.get("remote_root") or "gdrive:knowthebigpicture"
         remote_root = require_string(remote_root, "remote_root")
 
         drive = GoogleDriveClient(google_config, logger)

@@ -1,17 +1,17 @@
 {
-  "default_vibe": "cinematic_muted",
+  "default_vibe": "educational_documentary",
   "vibes": {
-    "cinematic_muted": {
-      "label": "Cinematic muted documentary",
-      "prompt": "Cinematic documentary still, shot on film. Muted, desaturated color palette with deep shadows and soft, motivated single-source lighting. Subtle 35mm film grain, gentle atmospheric haze, shallow depth of field. Serious, restrained, journalistic mood. Photorealistic."
+    "educational_documentary": {
+      "label": "Simple educational documentary",
+      "prompt": "A simple educational documentary image communicating one idea at a glance. One obvious subject or action, very few objects, plain uncluttered surroundings, restrained color, soft natural lighting, generous negative space, and an immediately understandable composition. Photorealistic and calm."
     },
-    "clean_digital": {
-      "label": "Crisp modern editorial",
-      "prompt": "Crisp modern editorial photograph. Sharp digital capture, muted but precise color grade, balanced natural lighting, minimal and composed. Calm, credible, contemporary news aesthetic. High detail, photorealistic."
+    "clean_diagrammatic": {
+      "label": "Simple object visualization",
+      "prompt": "A single clean three-dimensional object or mechanism on a plain neutral background. Show only the essential parts, with an obvious shape and relationship, restrained colors, soft studio lighting, generous empty space, and no decorative elements."
     },
-    "archival_mono": {
-      "label": "Archival black & white",
-      "prompt": "Archival documentary still in desaturated black and white. High-contrast monochrome, grainy analog film texture, dramatic chiaroscuro lighting, timeless historical mood. Photorealistic."
+    "cinematic_scale": {
+      "label": "Simple real-world scale",
+      "prompt": "A calm real-world documentary image with one main subject that makes scale or function immediately understandable. Natural perspective, grounded color, soft lighting, minimal background activity, and generous empty space."
     }
   }
 }

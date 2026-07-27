@@ -1,0 +1,49 @@
+{
+  "explainer": {
+    "question": null,
+    "subject": null,
+    "audience": "general_non_technical_audience"
+  },
+  "parse": {
+    "model": "gpt-5-mini",
+    "min_slides": 5,
+    "max_slides": 6,
+    "max_words_per_heading": 8,
+    "max_words_per_explanation": 14,
+    "on_verification_fail": "fail_job"
+  },
+  "images": {
+    "model": "gpt-image-1",
+    "vibe": "educational_documentary"
+  },
+  "compose": {
+    "backdrop": "scrim_plate",
+    "show_role_kicker": false,
+    "show_explanation": true
+  },
+  "video": {
+    "min_seconds": 30,
+    "max_seconds": 60,
+    "motion": 0.06,
+    "audio_track": null,
+    "outro": {
+      "enabled": true,
+      "image": null
+    }
+  },
+  "youtube": {
+    "enabled": false,
+    "upload_type": "short",
+    "privacy_status": "private",
+    "category_id": "27",
+    "made_for_kids": false,
+    "contains_synthetic_media": true
+  },
+  "instagram": {
+    "enabled": false,
+    "publish_mode": "container_only",
+    "caption": null,
+    "hashtags": [],
+    "video_url": null
+  }
+}

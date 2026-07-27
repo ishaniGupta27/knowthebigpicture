@@ -1,106 +1,140 @@
-# KnowTheTimeline
+# Know the Big Picture
 
-Turns a news source into a 60-second, objective, chronological video answering
-one question: **"How did we get here?"** Heavy media lives in Google Drive, jobs
-run on GitHub Actions, and finished videos publish as private YouTube Shorts and
-Instagram Reels.
+Know the Big Picture turns a question into a short visual explanation for ordinary
+people with no technical background. A teenager, an older adult, an artist, or
+someone speaking English as a second language should understand it immediately.
+It teaches the relevant **what, why, how, who, and when** without forcing every
+question into the same structure.
+
+> The internet explains what. We explain why and how.
+
+The first slide always poses the question. The remaining slides build the
+smallest useful teaching path: definitions, purpose, mechanisms, components,
+examples, comparisons, context, misconceptions, or a surprising final insight.
+The content is evergreen by default and source-grounded. Time appears only when
+it genuinely helps explain the subject.
 
 ## Pipeline
 
-`source -> parse -> verify -> images -> compose -> render -> publish`
-
-0. **source** – if only `headline.txt` exists, LLM writes `source.txt` (skipped if `source.txt` present)
-1. **parse** – LLM -> `timeline.json` + `youtube_metadata.json`
-2. **verify** – mechanical checks (verbatim quotes, dates, chronology, word cap)
-3. **images** – one 9:16 background per slide (OpenAI, parallel)
-4. **compose** – Pillow draws date + headline + detail onto each background
-5. **render** – timing plan -> `timeline.mp4` (MoviePy, + outro, + optional audio)
-6. **publish** – upload as a private YouTube Short and/or an Instagram Reel
-
-Everything lives in a numeric job folder; stages cache, so re-runs skip finished work:
-
+```text
+question → source packet → explain → verify → images → compose → render → publish
 ```
+
+0. **Source** — reuse `source.txt`, or create a source packet from `question.txt`.
+1. **Explain** — generate `explainer.json` and YouTube metadata in one call.
+2. **Verify** — check the question slide, structure, word limits, and quotations.
+3. **Images** — generate one teaching-oriented 9:16 visual per slide.
+4. **Compose** — add the role, heading, explanation, and brand signature.
+5. **Render** — create `explainer.mp4` with derived timing and an optional outro.
+6. **Publish** — optionally upload to YouTube Shorts and/or Instagram Reels.
+
+Stages cache their outputs, so interrupted jobs can resume without repeating
+expensive work.
+
+## Job contract
+
+```text
 jobs/<id>/
-  job.json            # optional; every setting has a default
-  inputs/source.txt   # OR inputs/headline.txt (stage 0 expands it)
-  outputs/            # timeline.json, content.json, backgrounds/, frames/, timeline.mp4, ...
-  logs/  status.json
+  job.json
+  inputs/
+    question.txt       # required unless explainer.question is configured
+    source.txt         # optional; generated from the question when absent
+  outputs/
+    explainer.json
+    content.json
+    youtube_metadata.json
+    backgrounds/
+    frames/
+    render_plan.json
+    explainer.mp4
+  logs/
+  status.json
 ```
 
-## Run it
+Start from [`job_templates/explainer`](job_templates/explainer). A job may omit
+`job.json`; the defaults are sufficient.
+
+## Run locally
 
 ```bash
 cd code
 python -m pip install -r requirements.txt
 
-python -m knowthetimeline.run <id>            # full run (needs OPENAI_API_KEY)
-python -m knowthetimeline.validate_secrets --all
+python -m knowthebigpicture.run <id>
+python -m knowthebigpicture.validate_secrets --all
 ```
 
-### Options
+Options:
 
-| Flag | What it does |
-|------|--------------|
-| `--dry-run` | Fully offline: mocks the LLM + images, still renders a real mp4. Needs `source.txt`. |
-| `--lite` | Content only: parse + verify -> `content.json`, then stop. No images/video/publish. Cheapest way to test the writing. |
-| `--remote [root]` | Pull the job from Drive (rclone) before, push results after. Root defaults to `KTT_REMOTE_ROOT`. |
-| `--no-publish` | Render everything but never upload to any platform. |
-| `--youtube` / `--instagram` | Publish only the named platform(s) this run. Naming one skips the other; name both to publish both. Omit both to publish every platform enabled in `job.json`. |
-| `--force` | Ignore cached `timeline.json` and re-parse. |
-| `--jobs-dir PATH` | Local jobs dir (default `<repo>/jobs`, or `KTT_JOBS_DIR`). |
+| Flag | Effect |
+|---|---|
+| `--dry-run` | Use local mock content and images, but compose and render a real video. Requires `source.txt`. |
+| `--lite` | Stop after verified `content.json`; no images, video, or publishing. |
+| `--remote [root]` | Pull and push the job with rclone. Defaults to `KBP_REMOTE_ROOT`. |
+| `--no-publish` | Render without uploading. |
+| `--youtube` / `--instagram` | Restrict publishing to the named platform(s). |
+| `--force` | Regenerate cached content, frames, and video. |
+| `--jobs-dir PATH` | Override `jobs/`; also configurable with `KBP_JOBS_DIR`. |
 
-Common combos: `--lite` (real content, no image spend), `--dry-run --lite` (offline structure check), `--remote --no-publish` (full render on a runner, no upload).
-
-## Remote + GitHub Actions
-
-`tools/submit_job.py` uploads a job folder to Drive and dispatches the workflow:
+Useful checks:
 
 ```bash
-python tools/submit_job.py --job-folder /path/to/<id> --creds ~/ktt_submit_creds.json           # dry_run
-python tools/submit_job.py --job-folder /path/to/<id> --lite --creds ~/ktt_submit_creds.json     # content only
-python tools/submit_job.py --job-folder /path/to/<id> --real --publish --creds ~/ktt_submit_creds.json
+python -m knowthebigpicture.run 1 --dry-run --lite
+python -m knowthebigpicture.run 1 --dry-run --force
+python -m knowthebigpicture.run 1 --remote --no-publish
 ```
 
-The workflow's `execution_mode` mirrors these: `dry_run` | `lite` | `real`.
-Add `--publish-instagram` (alongside or instead of `--publish`) to also dispatch
-an Instagram Reel publish.
+## Job configuration
+
+The important controls are:
+
+- `explainer.question`, `subject`, and `audience`
+- `parse.min_slides`, `max_slides`, and word limits
+- `images.model` and `vibe`
+- `compose.show_role_kicker` and `show_explanation`
+- `video.min_seconds`, `max_seconds`, audio, motion, and outro
+- `youtube` and `instagram` publishing settings
+
+There are no content categories. The same prompt and schema adapt to any
+well-sourced question.
+
+## Remote runs
+
+`tools/submit_job.py` uploads a numeric job folder and dispatches
+`.github/workflows/run-knowthebigpicture.yml`:
+
+```bash
+python tools/submit_job.py --job-folder /path/to/4 --creds ~/kbp_submit_creds.json
+python tools/submit_job.py --job-folder /path/to/4 --lite --creds ~/kbp_submit_creds.json
+python tools/submit_job.py --job-folder /path/to/4 --real --publish --creds ~/kbp_submit_creds.json
+```
+
+Execution modes are `dry_run`, `lite`, and `real`. Add `--publish-instagram` to
+request Instagram publishing.
 
 ## Publishing
 
-Publishing is per-platform, gated by `job.json`: set `youtube.enabled` and/or
-`instagram.enabled` to `true`. At run time you can split further:
-`--youtube` / `--instagram` restrict a run to just those platforms, and
-`--no-publish` disables all of it. On GitHub Actions the same split is exposed as
-the separate `publish_youtube` and `publish_instagram` tick marks.
+Publishing is disabled by default.
 
-- **YouTube** – resumable file upload as a private Short.
-- **Instagram Reels** – uses the Instagram Graph API, which needs a **public
-  HTTPS URL** to the mp4 (no direct upload). The URL is generated from the video
-  already pushed to Drive via `rclone link`, so Instagram publish requires a
-  `--remote` run (or set `instagram.video_url` in `job.json`). Drive direct links
-  can be unreliable for Instagram ingestion and break for files over ~100MB (our
-  Reels are well under that).
-  - Instagram has **no draft/private status** like YouTube. `instagram.publish_mode`
-    controls this:
-    - `container_only` (default) – builds and validates the media container but
-      **does not go live** (a safe "draft"; containers expire ~24h later).
-    - `live` – performs the final publish so the Reel goes public.
-  - The caption reuses `youtube_metadata.json` (title + description) plus hashtags
-    derived from `tags`; override with `instagram.caption` / `instagram.hashtags`.
+- YouTube uploads a private Short using the generated question-led metadata.
+- Instagram defaults to `container_only`, which validates a Reel container
+  without making it public. Set `instagram.publish_mode` to `live` intentionally.
+- Instagram requires a public HTTPS video URL, normally created from the remote
+  Drive copy during a `--remote` run.
 
-## Secrets
+## Secrets and environment
 
-Copy `secrets/knowthetimeline.secrets.example.json` to
-`secrets/knowthetimeline.secrets.json` (git-ignored), or set env / Actions secrets:
+Local secrets live in `secrets/knowthebigpicture.secrets.json` or environment
+variables:
 
-- `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`) — parsing, source, images
-- `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` / `YOUTUBE_REFRESH_TOKEN` — YouTube publishing
-- `INSTAGRAM_ACCESS_TOKEN` / `INSTAGRAM_USER_ID` — Instagram Reels publishing
-- `RCLONE_CONFIG` — remote Drive sync (also used to build the Instagram video URL)
+- `OPENAI_API_KEY` and optional `OPENAI_MODEL`
+- `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`
+- `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID`
+- `RCLONE_CONFIG`
 
-## Assets (`assets/`)
+Know the Big Picture-specific environment variables use the `KBP_` prefix:
+`KBP_REMOTE_ROOT`, `KBP_RCLONE_BIN`, `KBP_JOBS_DIR`, `KBP_BRAND_STYLES`, and
+`KBP_SUBMIT_CREDS`.
 
-`brand/styles.json` (image vibes, shipped) · `fonts/` (headline font) ·
-`outro/outro.jpg` (fallback generated if absent) · `audio/` (optional music bed).
-
-See `docs/DESIGN.md` for the full design rationale.
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the canonical product and technical
+contract.
