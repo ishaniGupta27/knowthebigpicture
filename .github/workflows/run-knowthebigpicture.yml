@@ -7,15 +7,19 @@ on:
         description: "Job id under remote jobs/"
         required: true
         type: string
+      question:
+        description: "Question to explain"
+        required: true
+        type: string
       remote_root:
         description: "rclone remote root"
         required: true
-        default: "gdrive:knowthebigpicture"
+        default: "kbpdrive:"
         type: string
       execution_mode:
         description: "dry_run = offline plumbing; lite = content only (no images); real = full render"
         required: true
-        default: "dry_run"
+        default: "real"
         type: choice
         options:
           - dry_run
@@ -24,7 +28,7 @@ on:
       publish_youtube:
         description: "Upload the explainer as a private YouTube Short"
         required: true
-        default: false
+        default: true
         type: boolean
       publish_instagram:
         description: "Publish the explainer as an Instagram Reel (uses instagram.publish_mode in job.json)"
@@ -48,6 +52,7 @@ jobs:
     env:
       KBP_REMOTE_ROOT: ${{ inputs.remote_root }}
       KBP_JOB_ID: ${{ inputs.job_id }}
+      KBP_QUESTION: ${{ inputs.question }}
       KBP_EXECUTION_MODE: ${{ inputs.execution_mode }}
       KBP_PUBLISH_YOUTUBE: ${{ inputs.publish_youtube }}
       KBP_PUBLISH_INSTAGRAM: ${{ inputs.publish_instagram }}
@@ -147,16 +152,46 @@ jobs:
           done
           echo "Instagram secrets are present"
 
-      - name: 11 Check remote folders
+      - name: 11 Pull remote assets and existing job data
         run: |
           rclone lsd "${KBP_REMOTE_ROOT}"
-          rclone lsf "${KBP_REMOTE_ROOT}/jobs/${KBP_JOB_ID}" --max-depth 3
+          mkdir -p assets "jobs/${KBP_JOB_ID}"
+          rclone copy "${KBP_REMOTE_ROOT}/assets" assets --progress --exclude .DS_Store --exclude "**/.DS_Store"
+          rclone copy "${KBP_REMOTE_ROOT}/jobs/${KBP_JOB_ID}" "jobs/${KBP_JOB_ID}" --progress --exclude .DS_Store --exclude "**/.DS_Store" --exclude "outputs/frames/**" || true
+
+      - name: 11b Write authoritative Actions input
+        run: |
+          mkdir -p "jobs/${KBP_JOB_ID}/inputs"
+          question_file="jobs/${KBP_JOB_ID}/inputs/question.txt"
+          submitted_question="${RUNNER_TEMP}/submitted-question.txt"
+          printf '%s\n' "${KBP_QUESTION}" > "${submitted_question}"
+          if [ -f "${question_file}" ] && ! cmp -s "${question_file}" "${submitted_question}"; then
+            echo "Job ${KBP_JOB_ID} already belongs to a different question."
+            echo "Use a new job id for a new question."
+            exit 1
+          fi
+          cp "${submitted_question}" "${question_file}"
+          printf '%s\n' \
+            '{' \
+            '  "youtube": {' \
+            '    "enabled": true,' \
+            '    "upload_type": "short",' \
+            '    "privacy_status": "private",' \
+            '    "category_id": "27",' \
+            '    "made_for_kids": false,' \
+            '    "contains_synthetic_media": true' \
+            '  },' \
+            '  "instagram": {' \
+            '    "enabled": true,' \
+            '    "publish_mode": "container_only"' \
+            '  }' \
+            '}' > "jobs/${KBP_JOB_ID}/job.json"
 
       - name: 12 Run dry-run
         if: ${{ inputs.execution_mode == 'dry_run' }}
         working-directory: code
         run: |
-          python -m knowthebigpicture.run "${KBP_JOB_ID}" --remote --dry-run
+          python -m knowthebigpicture.run "${KBP_JOB_ID}" --dry-run --no-publish
 
       - name: 12b Run lite job (content only, no images)
         if: ${{ inputs.execution_mode == 'lite' }}
@@ -164,7 +199,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python -m knowthebigpicture.run "${KBP_JOB_ID}" --remote --lite
+          python -m knowthebigpicture.run "${KBP_JOB_ID}" --lite --no-publish
 
       - name: 13 Run real job (render, no publish)
         if: ${{ inputs.execution_mode == 'real' }}
@@ -172,7 +207,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python -m knowthebigpicture.run "${KBP_JOB_ID}" --remote --no-publish
+          python -m knowthebigpicture.run "${KBP_JOB_ID}" --no-publish
 
       - name: 14 Upload private YouTube Short
         if: ${{ inputs.execution_mode == 'real' && inputs.publish_youtube }}
@@ -193,8 +228,8 @@ jobs:
         run: |
           python -m knowthebigpicture.publish_instagram "${KBP_JOB_ID}"
 
-      - name: 15 Push job folder after publish layer
-        if: ${{ always() && inputs.execution_mode == 'real' && (inputs.publish_youtube || inputs.publish_instagram) }}
+      - name: 15 Push job folder
+        if: always()
         run: |
           if [ -d "jobs/${KBP_JOB_ID}" ]; then
             rclone copy "jobs/${KBP_JOB_ID}" "${KBP_REMOTE_ROOT}/jobs/${KBP_JOB_ID}" --progress --exclude .DS_Store --exclude "**/.DS_Store" --exclude "outputs/frames/**"

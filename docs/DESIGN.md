@@ -80,9 +80,10 @@ flowchart TD
     V --> S6["6. PUBLISH"]
 ```
 
-Stage 0 is skipped when `source.txt` already exists. `--dry-run` mocks the paid
-content and image calls while exercising verification, composition, timing, and
-video rendering. `--lite` stops after content generation.
+Stage 0 is skipped when `source.txt` already exists. `--dry-run` creates a local
+placeholder source when needed and mocks the paid content and image calls while
+exercising verification, composition, timing, and video rendering. `--lite`
+stops after content generation.
 
 ## 4. Job contract
 
@@ -106,10 +107,11 @@ jobs/<numeric-id>/
   status.json
 ```
 
-`question.txt` is the primary author input. `source.txt` is optional for a real
-run and mandatory for an offline dry run. When it is missing, Stage 0 creates a
-stable factual source packet from the question. Questions involving mutable
-facts require appropriately current external material; the prompt must not guess.
+`question.txt` is the primary author input. `source.txt` is optional. When it is
+missing, Stage 0 creates a stable factual source packet during a real run or a
+clearly synthetic placeholder packet during an offline dry run. Questions
+involving mutable facts require appropriately current external material in real
+runs; the prompt must not guess.
 
 ## 5. Canonical schema
 

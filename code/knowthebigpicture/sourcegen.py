@@ -9,6 +9,25 @@ OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SOURCE_MARKER = "QUESTION:"
 
 
+def mock_source_for_question(question):
+    """Create an offline source packet that exercises the dry-run pipeline.
+
+    The statements are intentionally generic: dry-run validates plumbing and
+    layout, not factual research or editorial quality.
+    """
+    topic = question.rstrip().rstrip("?").strip() or "the question"
+    return "\n".join(
+        [
+            f"This mock source packet is about the question: {question}",
+            f"The subject being explained in this offline test is {topic}.",
+            f"A complete real run would research reliable facts about {topic}.",
+            f"The explanation would then organize those facts into a clear teaching sequence about {topic}.",
+            f"Each slide would use a source quotation supporting its explanation of {topic}.",
+            f"This placeholder material exists only to test generation, verification, composition, and rendering for {topic}.",
+        ]
+    )
+
+
 def load_source_prompt():
     """Return the instruction portion of source_prompt.txt (without the
     human-facing 'TOPIC / ARTICLE:' paste block)."""
@@ -79,10 +98,11 @@ def ensure_source(job, dry_run=False):
         raise KtwError(f"Question file is empty: {job.question_path}")
 
     if dry_run:
-        raise KtwError(
-            "Source generation (step 0) needs a real run. Either run without "
-            "--dry-run, or provide inputs/source.txt for the dry run."
-        )
+        source_text = mock_source_for_question(question)
+        job.source_path.parent.mkdir(parents=True, exist_ok=True)
+        job.source_path.write_text(source_text + "\n")
+        print(f"[dry-run] mock source written: {job.source_path}")
+        return
 
     cfg = parse_settings(job)
     api_key = secret_value("OPENAI_API_KEY", required=True)

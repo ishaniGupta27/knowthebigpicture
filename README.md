@@ -20,7 +20,8 @@ it genuinely helps explain the subject.
 question → source packet → explain → verify → images → compose → render → publish
 ```
 
-0. **Source** — reuse `source.txt`, or create a source packet from `question.txt`.
+0. **Source** — reuse `source.txt`, create a real source packet from
+   `question.txt`, or create a local placeholder source during `--dry-run`.
 1. **Explain** — generate `explainer.json` and YouTube metadata in one call.
 2. **Verify** — check the question slide, structure, word limits, and quotations.
 3. **Images** — generate one teaching-oriented 9:16 visual per slide.
@@ -68,7 +69,7 @@ Options:
 
 | Flag | Effect |
 |---|---|
-| `--dry-run` | Use local mock content and images, but compose and render a real video. Requires `source.txt`. |
+| `--dry-run` | Use a local mock source, content, and images, but compose and render a real video. |
 | `--lite` | Stop after verified `content.json`; no images, video, or publishing. |
 | `--remote [root]` | Pull and push the job with rclone. Defaults to `KBP_REMOTE_ROOT`. |
 | `--no-publish` | Render without uploading. |
@@ -109,8 +110,9 @@ python tools/submit_job.py --job-folder /path/to/4 --lite --creds ~/kbp_submit_c
 python tools/submit_job.py --job-folder /path/to/4 --real --publish --creds ~/kbp_submit_creds.json
 ```
 
-Execution modes are `dry_run`, `lite`, and `real`. Add `--publish-instagram` to
-request Instagram publishing.
+The Actions form accepts the question directly. Execution modes are `real`
+(default), `dry_run`, and `lite`. YouTube publishing defaults on and Instagram
+publishing defaults off; both remain selectable for real runs.
 
 ## Publishing
 
