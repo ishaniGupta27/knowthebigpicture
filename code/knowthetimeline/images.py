@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -71,6 +72,25 @@ def is_policy_refusal(status_code, body_text):
     )
 
 
+def retry_wait_seconds(response, body, attempt):
+    """How long to wait before retrying, honoring what OpenAI tells us."""
+    header = response.headers.get("Retry-After")
+    if header:
+        try:
+            return float(header)
+        except ValueError:
+            pass
+    # Rate-limit errors include e.g. "Please try again in 12s" / "in 1.5s".
+    match = re.search(r"try again in ([0-9.]+)\s*(ms|s)?", body, re.IGNORECASE)
+    if match:
+        value = float(match.group(1))
+        if (match.group(2) or "s").lower() == "ms":
+            value /= 1000.0
+        return value
+    # Fall back to exponential backoff for 5xx / unlabeled 429s.
+    return 2.0 * (attempt + 1)
+
+
 def request_image(prompt, model, size, api_key):
     import requests
 
@@ -97,7 +117,10 @@ def request_image(prompt, model, size, api_key):
             raise PolicyRefusal(body)
         if response.status_code in (429, 500, 502, 503, 504):
             last_error = body
-            time.sleep(2 * (attempt + 1))
+            if attempt < settings.IMAGE_RETRIES:
+                wait = retry_wait_seconds(response, body, attempt) + 1.0
+                print(f"  rate limited/transient error; retrying in {wait:.0f}s")
+                time.sleep(wait)
             continue
         raise KttError(
             f"OpenAI image request failed: HTTP {response.status_code}: {body}"

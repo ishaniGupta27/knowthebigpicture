@@ -35,7 +35,7 @@ venv/
 env/
 
 # Heavy shared media lives in remote storage.
-assets/
+assets/*
 jobs/
 
 # Lightweight examples stay in Git.

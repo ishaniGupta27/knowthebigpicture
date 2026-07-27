@@ -1,0 +1,17 @@
+{
+  "default_vibe": "cinematic_muted",
+  "vibes": {
+    "cinematic_muted": {
+      "label": "Cinematic muted documentary",
+      "prompt": "Cinematic documentary still, shot on film. Muted, desaturated color palette with deep shadows and soft, motivated single-source lighting. Subtle 35mm film grain, gentle atmospheric haze, shallow depth of field. Serious, restrained, journalistic mood. Photorealistic."
+    },
+    "clean_digital": {
+      "label": "Crisp modern editorial",
+      "prompt": "Crisp modern editorial photograph. Sharp digital capture, muted but precise color grade, balanced natural lighting, minimal and composed. Calm, credible, contemporary news aesthetic. High detail, photorealistic."
+    },
+    "archival_mono": {
+      "label": "Archival black & white",
+      "prompt": "Archival documentary still in desaturated black and white. High-contrast monochrome, grainy analog film texture, dramatic chiaroscuro lighting, timeless historical mood. Photorealistic."
+    }
+  }
+}

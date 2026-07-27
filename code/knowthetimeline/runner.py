@@ -70,26 +70,40 @@ def run_job(
                 log_kv(key, value)
             return outputs
 
-        log_section("STAGE 3  IMAGES")
-        image_results = mock_images(job, timeline) if dry_run else run_images(job, timeline)
+        if not force and job.video_path.is_file():
+            log_section("STAGES 3-5  SKIPPED (video already exists)")
+            print(
+                f"Reusing existing video: {job.video_path}\n"
+                "Pass --force to rebuild images, frames, and video."
+            )
+            outputs = {
+                "timeline": str(job.timeline_path),
+                "metadata": str(job.metadata_path),
+                "content": str(content_path),
+                "video": str(job.video_path),
+                "video_cached": True,
+            }
+        else:
+            log_section("STAGE 3  IMAGES")
+            image_results = mock_images(job, timeline) if dry_run else run_images(job, timeline)
 
-        log_section("STAGE 4  COMPOSE")
-        frames = run_compose(job, timeline)
+            log_section("STAGE 4  COMPOSE")
+            frames = run_compose(job, timeline)
 
-        log_section("STAGE 5  RENDER")
-        render_plan = build_render_plan(job, timeline)
-        video_path = run_video(job, timeline, render_plan)
+            log_section("STAGE 5  RENDER")
+            render_plan = build_render_plan(job, timeline)
+            video_path = run_video(job, timeline, render_plan)
 
-        outputs = {
-            "timeline": str(job.timeline_path),
-            "metadata": str(job.metadata_path),
-            "content": str(content_path),
-            "render_plan": str(job.render_plan_path),
-            "backgrounds": len(image_results),
-            "frames": len(frames),
-            "video": video_path,
-            "total_duration": render_plan["total_duration"],
-        }
+            outputs = {
+                "timeline": str(job.timeline_path),
+                "metadata": str(job.metadata_path),
+                "content": str(content_path),
+                "render_plan": str(job.render_plan_path),
+                "backgrounds": len(image_results),
+                "frames": len(frames),
+                "video": video_path,
+                "total_duration": render_plan["total_duration"],
+            }
 
         youtube = youtube_settings(job)
         instagram = job.section("instagram")

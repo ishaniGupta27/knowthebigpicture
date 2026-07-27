@@ -61,6 +61,25 @@ def run_rclone_copy(rclone_bin, source, destination, label, exclude=None):
         raise KttError(f"rclone failed while {label.lower()}") from e
 
 
+def rclone_copy_file(rclone_bin, local_file, remote_path):
+    """Copy a single local file to an exact remote path (rclone copyto)."""
+    configure_rclone_from_secret()
+
+    command = [rclone_bin, "copyto", str(local_file), str(remote_path)]
+    print("\nREMOTE COPY FILE")
+    print("Command: " + " ".join(command))
+
+    try:
+        subprocess.run(command, check=True)
+    except FileNotFoundError as e:
+        raise KttError(
+            "rclone was not found. Install rclone or set KTT_RCLONE_BIN "
+            "to the full rclone path."
+        ) from e
+    except subprocess.CalledProcessError as e:
+        raise KttError(f"rclone failed to copy {local_file} to {remote_path}") from e
+
+
 def rclone_public_link(rclone_bin, remote_path):
     configure_rclone_from_secret()
 

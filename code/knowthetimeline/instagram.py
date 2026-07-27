@@ -5,7 +5,13 @@ import time
 from pathlib import Path
 
 from .errors import KttError
-from .remote import rclone_bin_from_env, rclone_public_link, remote_join, remote_root_from_env
+from .remote import (
+    rclone_bin_from_env,
+    rclone_copy_file,
+    rclone_public_link,
+    remote_join,
+    remote_root_from_env,
+)
 from .secrets import secret_value
 from .status import utc_now
 from .youtube import load_youtube_metadata
@@ -174,6 +180,13 @@ def resolve_video_url(job, remote_root=None, rclone_bin=None):
 
     rclone_bin = rclone_bin or rclone_bin_from_env()
     remote_path = remote_join(remote_root, "jobs", job.job_id, "outputs", "timeline.mp4")
+
+    # Ensure the freshly rendered video is on Drive before linking it. The main
+    # run pushes the job folder only after publishing, so upload the single file
+    # here to make both the integrated run and standalone publish robust.
+    if job.video_path.is_file():
+        rclone_copy_file(rclone_bin, job.video_path, remote_path)
+
     link = rclone_public_link(rclone_bin, remote_path)
 
     file_id = extract_drive_file_id(link)

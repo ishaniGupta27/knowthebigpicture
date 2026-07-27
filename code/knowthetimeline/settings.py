@@ -54,8 +54,8 @@ MAX_WORDS_PER_HEADLINE = 16
 # --- Image defaults ----------------------------------------------------------
 DEFAULT_IMAGE_MODEL = "gpt-image-1"
 DEFAULT_VIBE = "cinematic_muted"
-IMAGE_CONCURRENCY = 4
-IMAGE_RETRIES = 2
+IMAGE_CONCURRENCY = 3
+IMAGE_RETRIES = 5
 
 # Portrait sizes the OpenAI models support; Stage 4 normalizes to the canvas.
 IMAGE_SIZES = {
@@ -77,7 +77,7 @@ DEFAULT_BACKDROP = "scrim_plate"  # scrim_plate | full_blur | plate_only
 DEFAULT_BLUR_RADIUS = 5
 DEFAULT_PLATE_OPACITY = 0.45
 DEFAULT_SHOW_DATE_KICKER = True
-DEFAULT_SHOW_DETAIL = True
+DEFAULT_SHOW_DETAIL = False
 BRAND_SIGNATURE = "KnowTheTimeline"
 
 # Safe-zone margins as fractions of the canvas (avoid platform UI overlays).
