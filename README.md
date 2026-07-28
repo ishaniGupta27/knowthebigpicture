@@ -115,7 +115,7 @@ defaults to 5 items. Execution modes are `real` (default), `dry_run`, and `lite`
 YouTube publishing defaults on and Instagram publishing defaults off.
 
 For unattended production, `.github/workflows/produce-next-video.yml` checks a
-Google Sheet every two hours and processes one `pending` row. Every result is
+Google Sheet twice a day and processes one `pending` row. Every result is
 uploaded as a YouTube Short; `youtube_public` selects public versus private, and
 Instagram remains opt-in. See
 [`docs/GOOGLE_SHEETS_QUEUE.md`](docs/GOOGLE_SHEETS_QUEUE.md) for the exact

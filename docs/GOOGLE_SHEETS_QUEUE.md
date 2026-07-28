@@ -1,8 +1,8 @@
 # Google Sheets video queue
 
-The scheduled workflow reads one approved idea from Google Sheets every two
-hours, produces its video, copies the job to Google Drive, uploads a YouTube
-Short, and updates the row.
+The scheduled workflow reads one approved idea from Google Sheets twice a day,
+produces its video, copies the job to Google Drive, uploads a YouTube Short, and
+updates the row.
 
 ## Sheet
 
@@ -71,7 +71,8 @@ The Sheets service account is independent from YouTube OAuth and rclone.
 
 The `Produce Next Queued Video` workflow:
 
-1. Runs at minute 17 every two hours, or manually through `workflow_dispatch`.
+1. Runs at 9:00 AM and 9:00 PM EST (10:00 AM and 10:00 PM during EDT), or
+   manually through `workflow_dispatch`.
 2. Selects the pending row with the lowest numeric ID.
 3. Immediately marks it `processing`.
 4. Performs a real, full video generation.
