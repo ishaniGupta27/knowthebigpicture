@@ -2,14 +2,16 @@
   "explainer": {
     "question": null,
     "subject": null,
-    "audience": "general_non_technical_audience"
+    "audience": "general_non_technical_audience",
+    "content_format": "why",
+    "item_count": 5
   },
   "parse": {
     "model": "gpt-5-mini",
     "min_slides": 5,
     "max_slides": 6,
     "max_words_per_heading": 8,
-    "max_words_per_explanation": 14,
+    "max_words_per_explanation": 12,
     "on_verification_fail": "fail_job"
   },
   "images": {

@@ -1,18 +1,16 @@
 # Know the Big Picture
 
-Know the Big Picture turns a question into a short visual explanation for ordinary
-people with no technical background. A teenager, an older adult, an artist, or
-someone speaking English as a second language should understand it immediately.
-It teaches the relevant **what, why, how, who, and when** without forcing every
-question into the same structure.
+Know the Big Picture turns an everyday curiosity into a short visual explanation
+for ordinary people. A teenager, an older adult, an artist, or someone speaking
+English as a second language should understand it immediately. The goal is not
+expertise; it is the smallest satisfying answer.
 
 > The internet explains what. We explain why and how.
 
-The first slide always poses the question. The remaining slides build the
-smallest useful teaching path: definitions, purpose, mechanisms, components,
-examples, comparisons, context, misconceptions, or a surprising final insight.
-The content is evergreen by default and source-grounded. Time appears only when
-it genuinely helps explain the subject.
+The first slide preserves the exact input. Six explicit formats then provide the
+right storytelling shape: `why`, `how`, `types`, `comparison`, `what_is_it`, and
+`myth_vs_fact`. Types produces a title plus 4–12 varieties; other formats produce
+5–6 slides.
 
 ## Pipeline
 
@@ -90,14 +88,15 @@ python -m knowthebigpicture.run 1 --remote --no-publish
 The important controls are:
 
 - `explainer.question`, `subject`, and `audience`
+- `explainer.content_format` and `item_count`
 - `parse.min_slides`, `max_slides`, and word limits
 - `images.model` and `vibe`
 - `compose.show_role_kicker` and `show_explanation`
 - `video.min_seconds`, `max_seconds`, audio, motion, and outro
 - `youtube` and `instagram` publishing settings
 
-There are no content categories. The same prompt and schema adapt to any
-well-sourced question.
+Subject categories remain flexible, while format-specific prompts control the
+story structure.
 
 ## Remote runs
 
@@ -110,9 +109,10 @@ python tools/submit_job.py --job-folder /path/to/4 --lite --creds ~/kbp_submit_c
 python tools/submit_job.py --job-folder /path/to/4 --real --publish --creds ~/kbp_submit_creds.json
 ```
 
-The Actions form accepts the question directly. Execution modes are `real`
-(default), `dry_run`, and `lite`. YouTube publishing defaults on and Instagram
-publishing defaults off; both remain selectable for real runs.
+The Actions form accepts the input and content format directly. A Types title may
+begin with a count from 4–12, such as `8 Coffee Drinks Explained`; otherwise it
+defaults to 5 items. Execution modes are `real` (default), `dry_run`, and `lite`.
+YouTube publishing defaults on and Instagram publishing defaults off.
 
 ## Publishing
 
@@ -139,4 +139,5 @@ Know the Big Picture-specific environment variables use the `KBP_` prefix:
 `KBP_SUBMIT_CREDS`.
 
 See [`docs/DESIGN.md`](docs/DESIGN.md) for the canonical product and technical
-contract.
+contract. See [`docs/CONTENT_FORMATS.md`](docs/CONTENT_FORMATS.md) for format
+definitions and the reusable daily idea-generation prompt.

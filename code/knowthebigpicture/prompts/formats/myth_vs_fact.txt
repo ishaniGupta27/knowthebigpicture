@@ -1,0 +1,15 @@
+Evaluate one familiar claim without forcing false certainty.
+
+Use this path:
+
+familiar claim -> short verdict -> what it gets right -> what it gets wrong or
+leaves out -> why people believe it -> practical takeaway
+
+The verdict should be one of: true, mostly true, partly true, misleading, mostly
+false, false, or depends. Use role `misconception` for the verdict and correction.
+Do not shame viewers. Preserve important qualifications and never turn "may" into
+"does." The opening slide presents the exact claim or question; the next slide
+should give the verdict promptly. End with what the viewer should remember or do.
+
+Use 5-6 slides total, including the opening question slide. The verdict slide is
+priority 1.

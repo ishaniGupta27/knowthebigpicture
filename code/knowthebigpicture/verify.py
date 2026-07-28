@@ -70,6 +70,7 @@ def verify_slide(slide, source_norm, source_raw, cfg):
 
 def verify_structure(explainer, cfg):
     slides = explainer.get("slides", [])
+    explainer_meta = explainer.get("explainer", {})
     problems = []
     if not cfg["min_slides"] <= len(slides) <= cfg["max_slides"]:
         problems.append(
@@ -79,7 +80,7 @@ def verify_structure(explainer, cfg):
         problems.append("the first slide must have role 'question'")
     if sum(s.get("role") == settings.ROLE_QUESTION for s in slides) != 1:
         problems.append("expected exactly one question slide")
-    question = explainer.get("explainer", {}).get("question", "")
+    question = explainer_meta.get("question", "")
     if slides and normalize(slides[0].get("heading")) != normalize(question):
         problems.append("the first slide heading must exactly match the central question")
     ids = [s.get("id") for s in slides]
@@ -87,6 +88,21 @@ def verify_structure(explainer, cfg):
         problems.append("slide ids must be sequential starting at 1")
     if len({normalize(s.get("heading")) for s in slides}) != len(slides):
         problems.append("slide headings must not be duplicated")
+    if explainer_meta.get("content_format") == settings.FORMAT_TYPES:
+        item_count = explainer_meta.get("item_count")
+        type_slides = [s for s in slides if s.get("role") == settings.ROLE_TYPE]
+        if len(type_slides) != item_count:
+            problems.append(
+                f"types format expected {item_count} type slides, "
+                f"found {len(type_slides)}"
+            )
+        non_type_roles = [
+            s.get("role")
+            for s in slides[1:]
+            if s.get("role") != settings.ROLE_TYPE
+        ]
+        if non_type_roles:
+            problems.append("every slide after the opening must have role 'type'")
     return problems
 
 

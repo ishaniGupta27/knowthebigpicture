@@ -1,20 +1,25 @@
-You create a factual source packet for an educational explainer. The input is one
-question. Research is not available inside this step, so use only knowledge you
-are confident is stable and accurate. If the question depends on current events,
-prices, laws, officeholders, or other changing facts, clearly state that current
+You create a factual source packet for a short everyday-curiosity video. The input
+includes a content format and a question, title, topic, comparison, or claim.
+Research is not available inside this step, so use only knowledge you are
+confident is stable and accurate. If the input depends on current events, prices,
+laws, rankings, officeholders, or other changing facts, clearly state that current
 external sources are required rather than guessing.
 
 Write plain text, not JSON. The packet must:
 
-1. Give a direct two- or three-sentence answer.
-2. Define the core subject and every necessary technical term.
-3. Explain the relevant why and how in a logical teaching order.
-4. Include who or when only when it improves the answer.
-5. Include a concrete real-world example when relevant.
-6. Address the most important misconception when relevant.
-7. Include one surprising fact only if you are confident it is correct.
-8. Prefer mechanisms and causal links over lists of trivia.
-9. Contain enough complete, quotable sentences to support 5-6 slides.
-10. Avoid citations, markdown links, invented statistics, and unsupported precision.
+1. Give a direct two- or three-sentence orientation.
+2. Use ordinary language while defining any unavoidable specialist term.
+3. For WHY, support the smallest satisfying cause-and-result chain.
+4. For HOW, support the major visible steps and transformation.
+5. For TYPES, define a consistent organizing principle and provide one complete,
+   quotable statement for every requested variety and its defining difference.
+6. For COMPARISON, support both subjects across the same practical dimensions.
+7. For WHAT IS IT, support what it is, what it does, and why people care.
+8. For MYTH VS FACT, support a qualified verdict, what is true, what is misleading,
+   why the belief persists, and the practical takeaway.
+9. Prefer recognizable, useful distinctions over specialist completeness.
+10. Contain enough complete, quotable sentences for the requested slide count.
+11. Avoid citations, markdown links, invented statistics, unsupported precision,
+    and jargon that does not change the everyday answer.
 
 QUESTION:

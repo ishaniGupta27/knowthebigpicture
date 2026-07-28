@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -83,10 +84,18 @@ def validate_job(job):
 
 def parse_settings(job):
     parse = job.section("parse")
+    explainer = explainer_overrides(job)
+    if explainer["content_format"] == settings.FORMAT_TYPES:
+        expected_slides = explainer["item_count"] + 1
+        default_min_slides = expected_slides
+        default_max_slides = expected_slides
+    else:
+        default_min_slides = settings.DEFAULT_MIN_SLIDES
+        default_max_slides = settings.DEFAULT_MAX_SLIDES
     return {
         "model": parse.get("model") or settings.DEFAULT_PARSE_MODEL,
-        "min_slides": int(parse.get("min_slides", settings.DEFAULT_MIN_SLIDES)),
-        "max_slides": int(parse.get("max_slides", settings.DEFAULT_MAX_SLIDES)),
+        "min_slides": int(parse.get("min_slides", default_min_slides)),
+        "max_slides": int(parse.get("max_slides", default_max_slides)),
         "max_words_per_heading": int(
             parse.get("max_words_per_heading", settings.MAX_WORDS_PER_HEADING)
         ),
@@ -140,10 +149,43 @@ def video_settings(job):
 
 def explainer_overrides(job):
     cfg = job.section("explainer")
+    content_format = cfg.get("content_format", settings.DEFAULT_CONTENT_FORMAT)
+    if content_format not in settings.VALID_CONTENT_FORMATS:
+        available = ", ".join(settings.VALID_CONTENT_FORMATS)
+        raise KtwError(
+            f"explainer.content_format must be one of: {available}"
+        )
+    item_count = settings.DEFAULT_TYPES_ITEM_COUNT
+    if content_format == settings.FORMAT_TYPES:
+        configured_item_count = cfg.get("item_count")
+        if configured_item_count is not None:
+            item_count = int(configured_item_count)
+        else:
+            input_text = cfg.get("question") or ""
+            if not input_text and job.question_path.is_file():
+                input_text = job.question_path.read_text().strip()
+            leading_count = re.match(r"^\s*(\d+)\b", input_text)
+            item_count = (
+                int(leading_count.group(1))
+                if leading_count
+                else settings.DEFAULT_TYPES_ITEM_COUNT
+            )
+    if (
+        content_format == settings.FORMAT_TYPES
+        and not settings.MIN_TYPES_ITEM_COUNT
+        <= item_count
+        <= settings.MAX_TYPES_ITEM_COUNT
+    ):
+        raise KtwError(
+            "explainer.item_count must be between "
+            f"{settings.MIN_TYPES_ITEM_COUNT} and {settings.MAX_TYPES_ITEM_COUNT}"
+        )
     return {
         "question": cfg.get("question"),
         "subject": cfg.get("subject"),
         "audience": cfg.get("audience", "general_non_technical_audience"),
+        "content_format": content_format,
+        "item_count": item_count,
     }
 
 

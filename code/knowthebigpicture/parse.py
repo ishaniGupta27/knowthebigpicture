@@ -22,6 +22,13 @@ def load_system_prompt():
     return (settings.PROMPTS_DIR / "parse_system_prompt.txt").read_text()
 
 
+def load_format_prompt(content_format):
+    path = settings.FORMAT_PROMPTS_DIR / f"{content_format}.txt"
+    if not path.is_file():
+        raise KtwError(f"Format prompt not found: {path}")
+    return path.read_text()
+
+
 def read_source(job):
     text = sanitize_source(job.source_path.read_text())
     if not text.strip():
@@ -45,6 +52,8 @@ def build_user_message(job, cfg, question, source_text):
     return (
         "EXPLAINER REQUEST\n"
         f"question: {question}\n"
+        f"content format: {overrides['content_format']}\n"
+        f"requested item count: {overrides['item_count']}\n"
         f"subject override: {overrides['subject'] or ''}\n"
         f"audience: {overrides['audience']}\n"
         f"minimum slides: {cfg['min_slides']}\n"
@@ -149,6 +158,12 @@ def build_explainer(job, parsed, question):
             "subject": subject,
             "subject_source": "author" if overrides["subject"] else "llm",
             "audience": overrides["audience"],
+            "content_format": overrides["content_format"],
+            "item_count": (
+                overrides["item_count"]
+                if overrides["content_format"] == settings.FORMAT_TYPES
+                else None
+            ),
             "summary": summary,
         },
         "slides": normalize_slides(parsed.get("slides")),
@@ -185,7 +200,9 @@ def run_parse(job, force=False):
     model = secret_value("OPENAI_MODEL") or cfg["model"]
     print(f"Creating explainer with OpenAI model: {model}")
     parsed = call_openai(
-        load_system_prompt(),
+        load_system_prompt()
+        + "\n\n## Selected format instructions\n\n"
+        + load_format_prompt(explainer_overrides(job)["content_format"]),
         build_user_message(job, cfg, question, source_text),
         model,
         secret_value("OPENAI_API_KEY", required=True),

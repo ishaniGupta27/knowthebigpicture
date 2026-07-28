@@ -46,7 +46,15 @@ def mock_parse(job, force=False):
     ]
     slides = []
     for index, sentence in enumerate(selected, 1):
-        role = role_sequence[min(index - 1, len(role_sequence) - 1)]
+        role = (
+            settings.ROLE_QUESTION
+            if index == 1
+            else (
+                settings.ROLE_TYPE
+                if overrides["content_format"] == settings.FORMAT_TYPES
+                else role_sequence[min(index - 1, len(role_sequence) - 1)]
+            )
+        )
         heading = (
             question
             if index == 1
@@ -65,7 +73,11 @@ def mock_parse(job, force=False):
                     "A clear educational visualization of the idea using a concrete "
                     "object, process, or cutaway, with no readable text."
                 ),
-                "priority": 1 if index <= 4 else (2 if index == count else 3),
+                "priority": (
+                    1
+                    if overrides["content_format"] == settings.FORMAT_TYPES
+                    else (1 if index <= 4 else (2 if index == count else 3))
+                ),
             }
         )
 
@@ -79,6 +91,12 @@ def mock_parse(job, force=False):
             "subject": subject,
             "subject_source": "author" if overrides["subject"] else "mock",
             "audience": overrides["audience"],
+            "content_format": overrides["content_format"],
+            "item_count": (
+                overrides["item_count"]
+                if overrides["content_format"] == settings.FORMAT_TYPES
+                else None
+            ),
             "summary": first_words(sentences[0], cfg["max_words_per_explanation"]),
         },
         "slides": slides,

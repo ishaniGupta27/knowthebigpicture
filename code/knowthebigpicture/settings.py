@@ -6,6 +6,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 CODE_DIR = PACKAGE_DIR.parent
 BASE_DIR = CODE_DIR.parent
 PROMPTS_DIR = PACKAGE_DIR / "prompts"
+FORMAT_PROMPTS_DIR = PROMPTS_DIR / "formats"
 
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
@@ -25,6 +26,7 @@ ROLE_COMPARISON = "comparison"
 ROLE_CONTEXT = "context"
 ROLE_MISCONCEPTION = "misconception"
 ROLE_SURPRISING_FACT = "surprising_fact"
+ROLE_TYPE = "type"
 VALID_ROLES = (
     ROLE_QUESTION,
     ROLE_DEFINITION,
@@ -36,13 +38,33 @@ VALID_ROLES = (
     ROLE_CONTEXT,
     ROLE_MISCONCEPTION,
     ROLE_SURPRISING_FACT,
+    ROLE_TYPE,
 )
+
+FORMAT_WHY = "why"
+FORMAT_HOW = "how"
+FORMAT_TYPES = "types"
+FORMAT_COMPARISON = "comparison"
+FORMAT_WHAT_IS_IT = "what_is_it"
+FORMAT_MYTH_VS_FACT = "myth_vs_fact"
+VALID_CONTENT_FORMATS = (
+    FORMAT_WHY,
+    FORMAT_HOW,
+    FORMAT_TYPES,
+    FORMAT_COMPARISON,
+    FORMAT_WHAT_IS_IT,
+    FORMAT_MYTH_VS_FACT,
+)
+DEFAULT_CONTENT_FORMAT = FORMAT_WHY
+DEFAULT_TYPES_ITEM_COUNT = 5
+MIN_TYPES_ITEM_COUNT = 4
+MAX_TYPES_ITEM_COUNT = 12
 
 DEFAULT_PARSE_MODEL = "gpt-5-mini"
 DEFAULT_MIN_SLIDES = 5
 DEFAULT_MAX_SLIDES = 6
 MAX_WORDS_PER_HEADING = 8
-MAX_WORDS_PER_EXPLANATION = 14
+MAX_WORDS_PER_EXPLANATION = 12
 
 DEFAULT_IMAGE_MODEL = "gpt-image-1"
 DEFAULT_VIBE = "educational_documentary"
@@ -83,6 +105,19 @@ TIMING_PER_WORD = 0.24
 TIMING_READING_FLOOR = 3.8
 TIMING_FINAL_BONUS = 1.0
 DEFAULT_OUTRO_DURATION = 3.5
+
+# Format-aware reading rhythm. Durations remain dynamic by combined heading and
+# explanation word count, with bounds that protect legibility and pacing.
+TIMING_PROFILES = {
+    FORMAT_WHY: {"base": 2.2, "per_word": 0.30, "min": 4.0, "max": 8.0},
+    FORMAT_HOW: {"base": 2.0, "per_word": 0.28, "min": 4.0, "max": 7.0},
+    FORMAT_TYPES: {"base": 1.8, "per_word": 0.26, "min": 3.5, "max": 5.5},
+    FORMAT_COMPARISON: {"base": 2.2, "per_word": 0.30, "min": 4.0, "max": 7.0},
+    FORMAT_WHAT_IS_IT: {"base": 2.2, "per_word": 0.30, "min": 4.0, "max": 8.0},
+    FORMAT_MYTH_VS_FACT: {"base": 2.2, "per_word": 0.30, "min": 4.0, "max": 8.0},
+}
+TITLE_TIMING_PROFILE = {"base": 3.5, "per_word": 0.15, "min": 3.5, "max": 5.0}
+MYTH_VERDICT_BONUS = 0.5
 
 DEFAULT_MOTION = 0.06
 DEFAULT_TRANSITION = "cut"

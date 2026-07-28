@@ -1,0 +1,11 @@
+Create a fair, practical comparison.
+
+Start with what the subjects share, then compare them using the same 3-4
+dimensions. Prefer differences people can see, taste, use, buy, or care about:
+ingredients, preparation, appearance, experience, purpose, or practical fit.
+
+Use role `comparison` for the main contrasts. Do not describe one side technically
+and the other casually. Do not declare a universal winner. End with the simplest
+useful guidance about when each fits.
+
+Use 5-6 slides total, including the opening question slide.

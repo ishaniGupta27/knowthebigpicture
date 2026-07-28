@@ -5,9 +5,9 @@ contracts, and pipeline.
 
 ## 1. Product
 
-Know the Big Picture is an automated short-form educational video engine. It answers
-one compelling question in everyday language for people with no technical
-background, across ages, professions, and levels of English fluency.
+Know the Big Picture is an automated everyday-curiosity video engine. It gives
+the smallest satisfying answer in ordinary language across ages, professions,
+and levels of English fluency.
 
 **Brand promise:** The internet explains what. We explain why and how.
 
@@ -19,8 +19,9 @@ and importance rather than explaining events as a fixed sequence.
 
 - Start with the viewer's exact question.
 - Be simple, never simplistic or childish.
-- Explain prerequisites before using them.
-- Prefer causal and mechanical understanding over trivia.
+- Optimize for curiosity rather than expertise.
+- Stop when the viewer can understand and retell the main idea.
+- Prefer recognizable differences, actions, and results over specialist depth.
 - Put one major idea on each slide.
 - Select only the relevant what, why, how, who, and when.
 - Ground every factual slide in the source packet.
@@ -29,6 +30,21 @@ and importance rather than explaining events as a fixed sequence.
 - Do not classify content into predefined categories.
 
 ## 2. Editorial model
+
+### Content formats
+
+| Format | Story shape |
+|---|---|
+| `why` | immediate answer → cause → recognizable result → payoff |
+| `how` | starting point → major actions → transformation → result |
+| `types` | exact title → one distinct variety per slide |
+| `comparison` | shared ground → matched practical differences → fit |
+| `what_is_it` | plain description → function → example → relevance |
+| `myth_vs_fact` | claim → qualified verdict → correction → takeaway |
+
+Types contains the requested 4–12 item slides plus the opening. Other formats use
+5–6 slides. Subject areas such as food, fitness, travel, home, nature, and fashion
+are editorial series, not separate technical pipelines.
 
 Every video begins with a `question` slide. The generator then chooses the
 smallest useful sequence from these roles:
@@ -45,9 +61,10 @@ smallest useful sequence from these roles:
 | `context` | Relevant who, when, or background |
 | `misconception` | Correction of a likely misunderstanding |
 | `surprising_fact` | A memorable, supported closing insight |
+| `type` | One distinct variety in a Types collection |
 
-Only `question` has a required count and position. Other roles may repeat or be
-omitted. History and dates appear only when they improve the explanation.
+Only `question` has a required count and position across every format. In Types,
+all following slides use `type`. Other formats select roles as needed.
 
 ### Question strategy
 
@@ -208,9 +225,10 @@ signature. Role labels are hidden by default to reduce clutter.
 
 ## 9. Timing and trimming
 
-Timing derives from the combined heading and explanation word count. A reading
-floor keeps dense concepts legible. `surprising_fact` receives a small landing
-bonus.
+Timing derives from the combined heading and explanation word count. Each format
+has its own base, per-word rate, and readable bounds; the opening uses a separate
+title rhythm. `surprising_fact` receives a landing bonus and Myth vs Fact verdicts
+receive a short pause.
 
 When content exceeds the configured maximum, the render plan removes the
 highest-numbered optional priorities first. Priority-1 slides remain. Remaining
@@ -233,7 +251,7 @@ by job configuration and command-line flags.
 
 | Section | Main controls |
 |---|---|
-| `explainer` | question, subject, audience |
+| `explainer` | question, subject, audience, content format, Types item count |
 | `parse` | model, slide range, word limits, verification behavior |
 | `images` | model, size, visual vibe |
 | `compose` | backdrop, explanation and role visibility |

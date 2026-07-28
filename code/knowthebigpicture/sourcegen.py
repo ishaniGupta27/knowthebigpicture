@@ -1,5 +1,5 @@
 from .errors import KtwError
-from .job import parse_settings
+from .job import explainer_overrides, parse_settings
 from .parse import extract_response_text
 from .secrets import secret_value
 from . import settings
@@ -9,23 +9,34 @@ OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SOURCE_MARKER = "QUESTION:"
 
 
-def mock_source_for_question(question):
+def mock_source_for_question(
+    question,
+    content_format=settings.DEFAULT_CONTENT_FORMAT,
+    item_count=settings.DEFAULT_TYPES_ITEM_COUNT,
+):
     """Create an offline source packet that exercises the dry-run pipeline.
 
     The statements are intentionally generic: dry-run validates plumbing and
     layout, not factual research or editorial quality.
     """
     topic = question.rstrip().rstrip("?").strip() or "the question"
-    return "\n".join(
-        [
-            f"This mock source packet is about the question: {question}",
-            f"The subject being explained in this offline test is {topic}.",
-            f"A complete real run would research reliable facts about {topic}.",
-            f"The explanation would then organize those facts into a clear teaching sequence about {topic}.",
-            f"Each slide would use a source quotation supporting its explanation of {topic}.",
-            f"This placeholder material exists only to test generation, verification, composition, and rendering for {topic}.",
-        ]
-    )
+    statements = [f"This mock source packet is about the question: {question}."]
+    if content_format == settings.FORMAT_TYPES:
+        statements.extend(
+            f"Mock variety {index} is a distinct placeholder example for {topic}."
+            for index in range(1, item_count + 1)
+        )
+    else:
+        statements.extend(
+            [
+                f"The subject being explained in this offline test is {topic}.",
+                f"A complete real run would research reliable facts about {topic}.",
+                f"The explanation would then organize those facts into a clear teaching sequence about {topic}.",
+                f"Each slide would use a source quotation supporting its explanation of {topic}.",
+                f"This placeholder material exists only to test generation, verification, composition, and rendering for {topic}.",
+            ]
+        )
+    return "\n".join(statements)
 
 
 def load_source_prompt():
@@ -98,7 +109,12 @@ def ensure_source(job, dry_run=False):
         raise KtwError(f"Question file is empty: {job.question_path}")
 
     if dry_run:
-        source_text = mock_source_for_question(question)
+        overrides = explainer_overrides(job)
+        source_text = mock_source_for_question(
+            question,
+            content_format=overrides["content_format"],
+            item_count=overrides["item_count"],
+        )
         job.source_path.parent.mkdir(parents=True, exist_ok=True)
         job.source_path.write_text(source_text + "\n")
         print(f"[dry-run] mock source written: {job.source_path}")
@@ -111,7 +127,11 @@ def ensure_source(job, dry_run=False):
     print(f"Generating source packet from question with OpenAI model: {model}")
     source_text = call_openai_text(
         load_source_prompt(),
-        f"{SOURCE_MARKER}\n{question}",
+        (
+            f"CONTENT FORMAT: {explainer_overrides(job)['content_format']}\n"
+            f"REQUESTED ITEMS: {explainer_overrides(job)['item_count']}\n"
+            f"{SOURCE_MARKER}\n{question}"
+        ),
         model,
         api_key,
     )

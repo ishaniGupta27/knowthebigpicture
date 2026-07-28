@@ -1,0 +1,18 @@
+Create a discovery-led collection of distinct, recognizable varieties.
+
+Silently define one organizing principle before selecting items. Every item must
+belong at the same conceptual level. Do not mix types, subtypes, brands,
+ingredients, preparation methods, and broad families.
+
+The first slide is the exact input and uses role `question`. Every remaining slide
+uses role `type`, names exactly one variety in the heading, and gives its single
+most memorable difference in the explanation.
+
+Choose items that are meaningfully different, visually recognizable, and
+explainable in one familiar sentence. Do not give a definition, origin story,
+ingredient list, and usage note for every item. Pick the one distinction a viewer
+will remember. Do not repeat the same distinction across items.
+
+Return exactly the requested number of type slides plus the opening slide. Treat
+the collection as selected popular or useful examples, not an exhaustive taxonomy.
+All slides are priority 1.

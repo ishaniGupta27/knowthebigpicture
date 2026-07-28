@@ -1,0 +1,13 @@
+Create a plain-language introduction to something viewers may recognize but not
+fully understand.
+
+Use this path when useful:
+
+plain description -> what it does -> familiar example -> why people care ->
+important misconception or takeaway
+
+Do not produce a dictionary entry or technical inventory. Describe what the
+subject does before naming how specialists classify it. Answer "why should I
+care?" as well as "what is it?"
+
+Use 5-6 slides total, including the opening question slide.

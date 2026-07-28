@@ -1,0 +1,13 @@
+Create a curiosity-led answer to a WHY question.
+
+Silently write the direct answer in one ordinary sentence. Select only the links
+needed to make that sentence satisfying:
+
+question -> immediate answer -> where the cause starts -> what happens ->
+recognizable result -> useful payoff
+
+Use only the links the topic needs. Do not turn a simple curiosity into a complete
+science, history, or engineering lesson. Stop at the first satisfying explanation.
+End with the clearest result or implication, not unrelated trivia.
+
+Use 5-6 slides total, including the opening question slide.

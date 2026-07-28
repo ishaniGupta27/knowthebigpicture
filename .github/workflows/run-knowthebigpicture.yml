@@ -8,9 +8,21 @@ on:
         required: true
         type: string
       question:
-        description: "Question to explain"
+        description: "Question, topic, comparison, or claim"
         required: true
         type: string
+      content_format:
+        description: "Editorial format"
+        required: true
+        default: "why"
+        type: choice
+        options:
+          - why
+          - how
+          - types
+          - comparison
+          - what_is_it
+          - myth_vs_fact
       remote_root:
         description: "rclone remote root"
         required: true
@@ -53,6 +65,7 @@ jobs:
       KBP_REMOTE_ROOT: ${{ inputs.remote_root }}
       KBP_JOB_ID: ${{ inputs.job_id }}
       KBP_QUESTION: ${{ inputs.question }}
+      KBP_CONTENT_FORMAT: ${{ inputs.content_format }}
       KBP_EXECUTION_MODE: ${{ inputs.execution_mode }}
       KBP_PUBLISH_YOUTUBE: ${{ inputs.publish_youtube }}
       KBP_PUBLISH_INSTAGRAM: ${{ inputs.publish_instagram }}
@@ -65,6 +78,7 @@ jobs:
         run: |
           echo "Job id: ${KBP_JOB_ID}"
           echo "Remote root: ${KBP_REMOTE_ROOT}"
+          echo "Content format: ${KBP_CONTENT_FORMAT}"
           echo "Execution mode: ${KBP_EXECUTION_MODE}"
           echo "Publish YouTube: ${KBP_PUBLISH_YOUTUBE}"
           echo "Publish Instagram: ${KBP_PUBLISH_INSTAGRAM}"
@@ -173,6 +187,10 @@ jobs:
           cp "${submitted_question}" "${question_file}"
           printf '%s\n' \
             '{' \
+            '  "explainer": {' \
+            "    \"content_format\": \"${KBP_CONTENT_FORMAT}\"," \
+            '    "audience": "general_non_technical_audience"' \
+            '  },' \
             '  "youtube": {' \
             '    "enabled": true,' \
             '    "upload_type": "short",' \
