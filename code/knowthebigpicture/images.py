@@ -5,7 +5,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageStat, UnidentifiedImageError
 
 from .errors import KtwError
 from .job import image_settings
@@ -34,13 +34,6 @@ def load_vibe_prompt(job, vibe_name):
 
 def build_prompt(vibe_prompt, scene):
     return f"{vibe_prompt} {scene} {settings.IMAGE_TECHNICAL_RULES}"
-
-
-def soften_scene(scene):
-    return (
-        "An abstract, symbolic, non-graphic interpretation representing the "
-        f"subject of: {scene}. Mood and atmosphere over literal or graphic detail."
-    )
 
 
 def parse_size(size):
@@ -91,11 +84,13 @@ def retry_wait_seconds(response, body, attempt):
     return 2.0 * (attempt + 1)
 
 
-def request_image(prompt, model, size, api_key):
+def request_image(prompt, model, size, quality, api_key):
     import requests
 
     payload = {"model": model, "prompt": prompt, "size": size, "n": 1}
-    if not model.startswith("gpt-image"):
+    if model.startswith("gpt-image"):
+        payload["quality"] = quality
+    else:
         payload["response_format"] = "b64_json"
 
     last_error = None
@@ -149,28 +144,75 @@ class PolicyRefusal(Exception):
     pass
 
 
-def save_image_response(response_json, path):
+class InvalidGeneratedImage(KtwError):
+    pass
+
+
+def validate_generated_image(image):
+    width, height = image.size
+    if width < 256 or height < 256:
+        raise InvalidGeneratedImage(
+            f"generated image dimensions are unusable: {width}x{height}"
+        )
+
+    sample = image.convert("L")
+    sample.thumbnail((64, 64))
+    statistics = ImageStat.Stat(sample)
+    mean = statistics.mean[0]
+    deviation = statistics.stddev[0]
+    if mean < 8:
+        raise InvalidGeneratedImage("generated image is effectively black")
+    if mean > 247:
+        raise InvalidGeneratedImage("generated image is effectively blank white")
+    if deviation < 2:
+        raise InvalidGeneratedImage("generated image has no usable visual detail")
+
+
+def decode_image_response(response_json):
     data = response_json.get("data", [])
     if not data:
-        raise KtwError("OpenAI image response contained no data")
+        raise InvalidGeneratedImage("OpenAI image response contained no data")
 
     item = data[0]
-    if item.get("b64_json"):
-        raw = base64.b64decode(item["b64_json"])
-        image = Image.open(io.BytesIO(raw)).convert("RGB")
-    elif item.get("url"):
-        import requests
+    try:
+        if item.get("b64_json"):
+            raw = base64.b64decode(item["b64_json"])
+            image = Image.open(io.BytesIO(raw)).convert("RGB")
+        elif item.get("url"):
+            import requests
 
-        raw = requests.get(item["url"], timeout=120).content
-        image = Image.open(io.BytesIO(raw)).convert("RGB")
-    else:
-        raise KtwError("OpenAI image response had neither b64_json nor url")
+            response = requests.get(item["url"], timeout=120)
+            response.raise_for_status()
+            image = Image.open(io.BytesIO(response.content)).convert("RGB")
+        else:
+            raise InvalidGeneratedImage(
+                "OpenAI image response had neither b64_json nor url"
+            )
+    except (ValueError, OSError, UnidentifiedImageError) as exc:
+        raise InvalidGeneratedImage(
+            f"OpenAI returned an unreadable image: {exc}"
+        ) from exc
 
+    validate_generated_image(image)
+    return image
+
+
+def save_image_response(response_json, path):
+    image = decode_image_response(response_json)
     path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path, "JPEG", quality=90)
+    image.save(path, "JPEG", quality=95, subsampling=0)
 
 
-def generate_node_background(node, job, vibe_prompt, model, size, api_key, force=False):
+def generate_node_background(
+    node,
+    job,
+    vibe_prompt,
+    model,
+    size,
+    quality,
+    api_key,
+    force=False,
+):
     node_id = node["id"]
     path = job.backgrounds_dir / f"{node_id}.jpg"
     if path.is_file() and not force:
@@ -181,22 +223,31 @@ def generate_node_background(node, job, vibe_prompt, model, size, api_key, force
         make_neutral_background(path, size)
         return {"id": node_id, "status": "neutral_no_prompt"}
 
-    # Fallback ladder: full prompt -> softened prompt -> neutral background.
-    try:
-        result = request_image(build_prompt(vibe_prompt, scene), model, size, api_key)
-        save_image_response(result, path)
-        return {"id": node_id, "status": "generated"}
-    except PolicyRefusal:
-        pass
+    prompt = build_prompt(vibe_prompt, scene)
+    for attempt in range(2):
+        try:
+            result = request_image(prompt, model, size, quality, api_key)
+            save_image_response(result, path)
+            status = "generated" if attempt == 0 else "generated_after_invalid_retry"
+            return {"id": node_id, "status": status}
+        except PolicyRefusal:
+            make_neutral_background(path, size)
+            return {"id": node_id, "status": "neutral_fallback"}
+        except InvalidGeneratedImage as exc:
+            if attempt == 0:
+                print(
+                    f"  node {node_id}: unusable image ({exc}); "
+                    "making one replacement request"
+                )
+                continue
+            print(
+                f"  node {node_id}: replacement image also unusable ({exc}); "
+                "using local neutral background"
+            )
+            make_neutral_background(path, size)
+            return {"id": node_id, "status": "neutral_after_invalid_retry"}
 
-    try:
-        softened = build_prompt(vibe_prompt, soften_scene(scene))
-        result = request_image(softened, model, size, api_key)
-        save_image_response(result, path)
-        return {"id": node_id, "status": "generated_softened"}
-    except PolicyRefusal:
-        make_neutral_background(path, size)
-        return {"id": node_id, "status": "neutral_fallback"}
+    raise InvalidGeneratedImage("image generation ended without a usable result")
 
 
 def run_images(job, explainer, force=False):
@@ -206,10 +257,14 @@ def run_images(job, explainer, force=False):
     api_key = secret_value("OPENAI_API_KEY", required=True)
     model = cfg["model"]
     size = cfg["size"]
+    quality = cfg["quality"]
 
     job.backgrounds_dir.mkdir(parents=True, exist_ok=True)
     nodes = explainer.get("slides", [])
-    print(f"Generating backgrounds: model={model}, vibe={vibe_name}, size={size}")
+    print(
+        "Generating backgrounds: "
+        f"model={model}, vibe={vibe_name}, size={size}, quality={quality}"
+    )
 
     results = []
     with ThreadPoolExecutor(max_workers=settings.IMAGE_CONCURRENCY) as pool:
@@ -221,6 +276,7 @@ def run_images(job, explainer, force=False):
                 vibe_prompt,
                 model,
                 size,
+                quality,
                 api_key,
                 force,
             ): node["id"]

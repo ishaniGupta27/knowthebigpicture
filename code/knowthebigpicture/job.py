@@ -113,6 +113,7 @@ def image_settings(job):
         "model": model,
         "vibe": images.get("vibe"),
         "size": images.get("size") or settings.image_size_for_model(model),
+        "quality": images.get("quality") or settings.DEFAULT_IMAGE_QUALITY,
     }
 
 

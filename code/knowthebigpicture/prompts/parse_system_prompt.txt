@@ -70,8 +70,11 @@ Use the selected format instructions to choose roles and story structure.
   supporting the complete heading and explanation. Never shorten, splice, or
   paraphrase quotations. Use separate array items for separate passages.
 - image_prompt: one simple, recognizable visual supporting the slide. Show one
-  subject or action with few objects and calm central space for text. Do not ask
-  for labels, readable text, diagrams, panels, arrows, equations, or logos.
+  subject or action with few objects and a naturally calm, unobstructed central
+  area. Never request any writing, letters, numbers, symbols, labels, logos,
+  signs, packaging text, screens, documents, diagrams, panels, arrows, equations,
+  captions, or watermarks. Describe only visible subjects, setting, composition,
+  materials, lighting, and mood.
 - priority: 1 is essential, 2 is useful, 3 is safest to drop.
 
 ## Output

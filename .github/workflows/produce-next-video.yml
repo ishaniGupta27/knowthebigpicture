@@ -1,0 +1,224 @@
+name: Produce Next Queued Video
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: knowthebigpicture-video-queue
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      KBP_REMOTE_ROOT: "kbpdrive:"
+      GOOGLE_SHEET_TAB: "VideoQueue"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "code/requirements.txt"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg rclone fonts-dejavu-core
+
+      - name: Install Python dependencies
+        working-directory: code
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Configure credentials
+        env:
+          RCLONE_CONFIG_SECRET: ${{ secrets.RCLONE_CONFIG }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID_SECRET: ${{ secrets.GOOGLE_SHEET_ID }}
+          OPENAI_API_KEY_SECRET: ${{ secrets.OPENAI_API_KEY }}
+          YOUTUBE_CLIENT_ID_SECRET: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN_SECRET: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          for name in \
+            RCLONE_CONFIG_SECRET \
+            GOOGLE_SERVICE_ACCOUNT_JSON \
+            GOOGLE_SHEET_ID_SECRET \
+            OPENAI_API_KEY_SECRET \
+            YOUTUBE_CLIENT_ID_SECRET \
+            YOUTUBE_CLIENT_SECRET_SECRET \
+            YOUTUBE_REFRESH_TOKEN_SECRET
+          do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: ${name%_SECRET}"
+              exit 1
+            fi
+          done
+
+          mkdir -p "${HOME}/.config/rclone"
+          printf '%s' "${RCLONE_CONFIG_SECRET}" \
+            > "${HOME}/.config/rclone/rclone.conf"
+          chmod 600 "${HOME}/.config/rclone/rclone.conf"
+
+          credentials_file="${RUNNER_TEMP}/google-service-account.json"
+          printf '%s' "${GOOGLE_SERVICE_ACCOUNT_JSON}" > "${credentials_file}"
+          chmod 600 "${credentials_file}"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${credentials_file}" >> "${GITHUB_ENV}"
+          echo "GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID_SECRET}" >> "${GITHUB_ENV}"
+
+      - name: Claim next pending row
+        id: queue
+        run: python tools/queue_worker.py claim
+
+      - name: Report empty queue
+        if: ${{ steps.queue.outputs.has_job != 'true' }}
+        run: echo "No pending rows. Nothing to produce."
+
+      - name: Verify optional Instagram secrets
+        if: ${{ steps.queue.outputs.has_job == 'true' && steps.queue.outputs.publish_instagram == 'true' }}
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+        run: |
+          for name in INSTAGRAM_ACCESS_TOKEN INSTAGRAM_USER_ID; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Pull assets and existing job data
+        if: ${{ steps.queue.outputs.has_job == 'true' }}
+        env:
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          rclone lsd "${KBP_REMOTE_ROOT}"
+          mkdir -p assets "jobs/${JOB_ID}"
+          rclone copy "${KBP_REMOTE_ROOT}/assets" assets \
+            --progress --exclude .DS_Store --exclude "**/.DS_Store"
+          rclone copy "${KBP_REMOTE_ROOT}/jobs/${JOB_ID}" "jobs/${JOB_ID}" \
+            --progress --exclude .DS_Store --exclude "**/.DS_Store" \
+            --exclude "outputs/frames/**" || true
+
+      - name: Create job from queue row
+        if: ${{ steps.queue.outputs.has_job == 'true' }}
+        working-directory: code
+        env:
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+          TOPIC: ${{ steps.queue.outputs.topic }}
+          CONTENT_FORMAT: ${{ steps.queue.outputs.content_format }}
+          NUMBER_OF_ITEMS: ${{ steps.queue.outputs.number_of_items }}
+          YOUTUBE_PUBLIC: ${{ steps.queue.outputs.youtube_public }}
+          PUBLISH_INSTAGRAM: ${{ steps.queue.outputs.publish_instagram }}
+        run: |
+          args=(
+            python -m knowthebigpicture.create_job
+            "${JOB_ID}"
+            --question "${TOPIC}"
+            --format "${CONTENT_FORMAT}"
+            --jobs-dir ../jobs
+          )
+          if [ -n "${NUMBER_OF_ITEMS}" ]; then
+            args+=(--item-count "${NUMBER_OF_ITEMS}")
+          fi
+          if [ "${YOUTUBE_PUBLIC}" = "true" ]; then
+            args+=(--youtube-public)
+          fi
+          if [ "${PUBLISH_INSTAGRAM}" = "true" ]; then
+            args+=(--instagram)
+          fi
+          "${args[@]}"
+
+      - name: Generate video
+        if: ${{ steps.queue.outputs.has_job == 'true' }}
+        working-directory: code
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          python -m knowthebigpicture.run "${JOB_ID}" \
+            --jobs-dir ../jobs --no-publish
+
+      - name: Upload YouTube Short
+        if: ${{ steps.queue.outputs.has_job == 'true' }}
+        working-directory: code
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          python -m knowthebigpicture.publish "${JOB_ID}" --jobs-dir ../jobs
+
+      - name: Publish Instagram Reel
+        if: ${{ steps.queue.outputs.has_job == 'true' && steps.queue.outputs.publish_instagram == 'true' }}
+        working-directory: code
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          python -m knowthebigpicture.publish_instagram "${JOB_ID}" \
+            --jobs-dir ../jobs --remote-root "${KBP_REMOTE_ROOT}"
+
+      - name: Push job folder to Drive
+        if: ${{ always() && steps.queue.outputs.has_job == 'true' }}
+        env:
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          rclone copy "jobs/${JOB_ID}" "${KBP_REMOTE_ROOT}/jobs/${JOB_ID}" \
+            --progress --exclude .DS_Store --exclude "**/.DS_Store" \
+            --exclude "outputs/frames/**"
+
+      - name: Mark queue row done
+        if: ${{ success() && steps.queue.outputs.has_job == 'true' }}
+        env:
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          output_url="$(python -c 'import json, os; print(json.load(open("jobs/" + os.environ["JOB_ID"] + "/outputs/youtube_upload.json"))["shorts_url"])')"
+          python tools/queue_worker.py complete \
+            --job-id "${JOB_ID}" --output "${output_url}"
+
+      - name: Mark queue row failed
+        if: ${{ failure() && steps.queue.outputs.has_job == 'true' }}
+        env:
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          python tools/queue_worker.py fail \
+            --job-id "${JOB_ID}" \
+            --error "GitHub Actions run failed: ${run_url}"
+
+      - name: Write run summary
+        if: always()
+        env:
+          HAS_JOB: ${{ steps.queue.outputs.has_job }}
+          JOB_ID: ${{ steps.queue.outputs.job_id }}
+          TOPIC: ${{ steps.queue.outputs.topic }}
+          YOUTUBE_PUBLIC: ${{ steps.queue.outputs.youtube_public }}
+          PUBLISH_INSTAGRAM: ${{ steps.queue.outputs.publish_instagram }}
+        run: |
+          {
+            echo "## Scheduled Video Queue"
+            echo ""
+            echo "- Pending job found: \`${HAS_JOB:-false}\`"
+            if [ "${HAS_JOB}" = "true" ]; then
+              echo "- Job id: \`${JOB_ID}\`"
+              echo "- Topic: ${TOPIC}"
+              echo "- Public YouTube Short: \`${YOUTUBE_PUBLIC}\`"
+              echo "- Publish Instagram: \`${PUBLISH_INSTAGRAM}\`"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"

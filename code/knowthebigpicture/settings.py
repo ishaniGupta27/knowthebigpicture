@@ -67,9 +67,10 @@ MAX_WORDS_PER_HEADING = 8
 MAX_WORDS_PER_EXPLANATION = 12
 
 DEFAULT_IMAGE_MODEL = "gpt-image-1"
+DEFAULT_IMAGE_QUALITY = "high"
 DEFAULT_VIBE = "educational_documentary"
 IMAGE_CONCURRENCY = 3
-IMAGE_RETRIES = 5
+IMAGE_RETRIES = 0
 IMAGE_CONNECT_TIMEOUT = 30
 IMAGE_READ_TIMEOUT = 300
 IMAGE_SIZES = {
@@ -78,12 +79,19 @@ IMAGE_SIZES = {
 }
 DEFAULT_IMAGE_SIZE = "1024x1536"
 IMAGE_TECHNICAL_RULES = (
-    "Vertical 9:16 composition. Show one clear subject or one simple action only. "
-    "Use very few objects, a plain uncluttered background, and generous calm "
-    "negative space in the center for a solid black text box. Avoid complex "
-    "diagrams, split screens, multiple panels, floating icons, arrows, equations, "
-    "data graphics, and decorative details. Absolutely no text, words, letters, "
-    "numbers, logos, labels, or watermarks."
+    "STRICT REQUIREMENT: the image itself must contain zero writing and zero "
+    "text-like marks. No words, letters, numbers, typography, captions, labels, "
+    "logos, brands, watermarks, signatures, symbols that resemble writing, or "
+    "invented pseudo-text anywhere. Do not include signs, labeled packaging, "
+    "book or newspaper pages, screens with interfaces, license plates, clothing "
+    "graphics, charts, maps, or documents. Vertical 9:16 composition. Create one "
+    "clear subject or one simple action with physically coherent shapes, realistic "
+    "materials, clean edges, natural proportions, controlled lighting, and premium "
+    "editorial-photography quality. Use very few objects and a simple uncluttered "
+    "setting. Leave the central area naturally calm and unobstructed; do not draw "
+    "a text box or placeholder. Avoid diagrams, split screens, multiple panels, "
+    "floating icons, arrows, equations, data graphics, borders, and decorative "
+    "clutter. Final reminder: render absolutely no text or text-like detail."
 )
 
 DEFAULT_BACKDROP = "scrim_plate"

@@ -56,8 +56,9 @@ def validate_youtube_config(job):
     if youtube.get("upload_type", "short") != "short":
         raise KtwError("youtube.upload_type must be 'short'")
 
-    if youtube.get("privacy_status", "private") != "private":
-        raise KtwError("youtube.privacy_status must be 'private'")
+    privacy_status = youtube.get("privacy_status", "private")
+    if privacy_status not in {"private", "public"}:
+        raise KtwError("youtube.privacy_status must be 'private' or 'public'")
 
     return youtube
 
@@ -132,7 +133,7 @@ def initiate_upload(video_path, metadata, youtube, token):
             "categoryId": str(youtube.get("category_id", "25")),
         },
         "status": {
-            "privacyStatus": "private",
+            "privacyStatus": youtube.get("privacy_status", "private"),
             "selfDeclaredMadeForKids": bool(youtube.get("made_for_kids", False)),
             "containsSyntheticMedia": bool(
                 youtube.get("contains_synthetic_media", True)
@@ -226,7 +227,7 @@ def publish_short(job, force=False):
     result = {
         "uploaded_at": utc_now(),
         "upload_type": "short",
-        "privacy_status": "private",
+        "privacy_status": youtube.get("privacy_status", "private"),
         "video_id": video_id,
         "shorts_url": f"https://www.youtube.com/shorts/{video_id}",
         "watch_url": f"https://www.youtube.com/watch?v={video_id}",

@@ -16,6 +16,7 @@
   },
   "images": {
     "model": "gpt-image-1",
+    "quality": "high",
     "vibe": "educational_documentary"
   },
   "compose": {

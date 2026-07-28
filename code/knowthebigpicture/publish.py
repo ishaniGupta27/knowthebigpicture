@@ -11,7 +11,10 @@ from .youtube import publish_short
 def main(argv=None):
     load_dotenv_if_present()
     parser = argparse.ArgumentParser(
-        description="Publish a rendered Know the Big Picture job as a private YouTube Short."
+        description=(
+            "Publish a rendered Know the Big Picture job as a configured "
+            "YouTube Short."
+        )
     )
     parser.add_argument("job_id", help="Numeric job id (folder under jobs/).")
     parser.add_argument("--jobs-dir", default=None, help="Override the local jobs dir.")

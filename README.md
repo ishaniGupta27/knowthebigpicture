@@ -114,11 +114,19 @@ begin with a count from 4–12, such as `8 Coffee Drinks Explained`; otherwise i
 defaults to 5 items. Execution modes are `real` (default), `dry_run`, and `lite`.
 YouTube publishing defaults on and Instagram publishing defaults off.
 
+For unattended production, `.github/workflows/produce-next-video.yml` checks a
+Google Sheet every two hours and processes one `pending` row. Every result is
+uploaded as a YouTube Short; `youtube_public` selects public versus private, and
+Instagram remains opt-in. See
+[`docs/GOOGLE_SHEETS_QUEUE.md`](docs/GOOGLE_SHEETS_QUEUE.md) for the exact
+columns, states, secrets, and setup.
+
 ## Publishing
 
 Publishing is disabled by default.
 
-- YouTube uploads a private Short using the generated question-led metadata.
+- YouTube uploads a private Short by default; queue jobs may explicitly select
+  public visibility.
 - Instagram defaults to `container_only`, which validates a Reel container
   without making it public. Set `instagram.publish_mode` to `live` intentionally.
 - Instagram requires a public HTTPS video URL, normally created from the remote
