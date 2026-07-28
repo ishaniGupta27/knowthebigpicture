@@ -123,9 +123,23 @@ def build_render_plan(job, explainer, narration=None):
     content_format = explainer.get("explainer", {}).get(
         "content_format", settings.DEFAULT_CONTENT_FORMAT
     )
-    outro_duration = (
-        settings.DEFAULT_OUTRO_DURATION if video_cfg["outro_enabled"] else 0.0
-    )
+    outro_speech = _speech_duration(narration, "outro")
+    outro_narrated = video_cfg["outro_enabled"] and outro_speech > 0
+    if not video_cfg["outro_enabled"]:
+        outro_duration = 0.0
+    elif outro_narrated:
+        # Grow the card so the spoken call-to-action is never clipped.
+        outro_duration = max(
+            settings.DEFAULT_OUTRO_DURATION,
+            round(
+                settings.NARRATION_LEAD_IN
+                + outro_speech
+                + settings.NARRATION_TAIL_PAD,
+                2,
+            ),
+        )
+    else:
+        outro_duration = settings.DEFAULT_OUTRO_DURATION
     reads = {
         slide["id"]: natural_duration(slide, content_format)
         for slide in source_slides
@@ -189,7 +203,7 @@ def build_render_plan(job, explainer, narration=None):
             {
                 "id": "outro",
                 "role": "outro",
-                "narrated": False,
+                "narrated": outro_narrated,
                 "start": round(cursor, 2),
                 "end": round(cursor + outro_duration, 2),
                 "duration": outro_duration,

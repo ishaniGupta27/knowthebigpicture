@@ -24,7 +24,7 @@ def make_outro_card(path):
                   promise_font, (255, 255, 255))
     draw_centered(draw, cx, int(H * 0.56), settings.BRAND_SIGNATURE, brand_font,
                   (176, 190, 210))
-    draw_centered(draw, cx, int(H * 0.62), "Follow to understand the world.", cta_font,
+    draw_centered(draw, cx, int(H * 0.62), "Subscribe to understand the world.", cta_font,
                   (150, 150, 150))
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,11 +123,16 @@ def _narration_clips(job, render_plan, narration, speed, lead_in):
         if not src.is_file():
             print(f"  narration clip missing for slide {slide['id']}; skipping")
             continue
+        # The outro CTA card is sized to its natural speech length and full
+        # lead-in, so it is never sped up with the content-fitting factor.
+        is_outro = slide["id"] == "outro"
+        clip_speed = 1.0 if is_outro else speed
+        clip_lead_in = settings.NARRATION_LEAD_IN if is_outro else lead_in
         path = src
-        if speed > 1.001:
-            path = compress_narration(src, compressed_dir / entry["file"], speed)
+        if clip_speed > 1.001:
+            path = compress_narration(src, compressed_dir / entry["file"], clip_speed)
         clip = AudioFileClip(str(path))
-        clips.append(clip.with_start(round(slide["start"] + lead_in, 3)))
+        clips.append(clip.with_start(round(slide["start"] + clip_lead_in, 3)))
     return clips
 
 

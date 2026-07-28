@@ -134,6 +134,11 @@ TIMING_PER_WORD = 0.24
 TIMING_READING_FLOOR = 3.8
 TIMING_FINAL_BONUS = 1.0
 DEFAULT_OUTRO_DURATION = 3.5
+# Spoken call-to-action over the outro card. Set to "" (or override
+# video.voiceover.outro_narration in job.json) to leave the outro silent.
+DEFAULT_OUTRO_NARRATION = (
+      "Enjoyed this? Give it a like, and subscribe—you won't want to miss tomorrow's question."
+)
 
 # Format-aware reading rhythm. Durations remain dynamic by combined heading and
 # explanation word count, with bounds that protect legibility and pacing.

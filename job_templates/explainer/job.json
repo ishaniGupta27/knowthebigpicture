@@ -41,7 +41,8 @@
       "voice": "en-US-AndrewNeural",
       "rate": "+0%",
       "music_volume": 0.1,
-      "on_tts_fail": "music"
+      "on_tts_fail": "music",
+      "outro_narration":  "Enjoyed this? Give it a like, and subscribe—you won't want to miss tomorrow's question."
     },
     "outro": {
       "enabled": true,

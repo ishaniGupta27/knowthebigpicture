@@ -185,6 +185,11 @@ def voiceover_settings(job):
             cfg.get("music_volume", settings.DEFAULT_VOICEOVER_MUSIC_VOLUME)
         ),
         "on_tts_fail": cfg.get("on_tts_fail") or settings.DEFAULT_ON_TTS_FAIL,
+        "outro_narration": (
+            cfg["outro_narration"]
+            if "outro_narration" in cfg
+            else settings.DEFAULT_OUTRO_NARRATION
+        ),
     }
 
 

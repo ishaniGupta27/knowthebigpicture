@@ -91,46 +91,60 @@ def load_manifest(job):
         return None
 
 
-def _build_manifest(job, explainer, cfg, force):
-    engine = cfg["engine"]
-    voice = cfg["voice"]
-    rate = cfg["rate"]
+def _synth_entry(job, slide_id, text, cfg, previous, force):
+    """Synthesize (or reuse cached) narration for one clip; return its manifest
+    entry, or None when there is nothing to speak."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    engine, voice, rate = cfg["engine"], cfg["voice"], cfg["rate"]
+    text_hash = _voice_hash(text, voice, rate, engine)
+    audio_path = job.narration_dir / f"{slide_id}.mp3"
+    cached = previous.get(slide_id)
+    if (
+        not force
+        and cached
+        and cached.get("hash") == text_hash
+        and audio_path.is_file()
+    ):
+        duration = float(cached["duration"])
+        print(f"  slide {slide_id}: cached narration ({duration:.2f}s)")
+    else:
+        print(f"  slide {slide_id}: synthesizing narration")
+        _synthesize(engine, text, voice, rate, audio_path)
+        duration = measure_duration(audio_path)
+        print(f"  slide {slide_id}: {duration:.2f}s")
+    return {
+        "file": audio_path.name,
+        "duration": round(duration, 3),
+        "hash": text_hash,
+        "text": text,
+    }
+
+
+def _build_manifest(job, explainer, cfg, force, outro_enabled):
     job.narration_dir.mkdir(parents=True, exist_ok=True)
     previous = {} if force else ((load_manifest(job) or {}).get("slides") or {})
 
     slides = {}
     for slide in explainer.get("slides", []):
         slide_id = str(slide["id"])
-        text = _slide_text(slide)
-        if not text:
-            continue
-        text_hash = _voice_hash(text, voice, rate, engine)
-        audio_path = job.narration_dir / f"{slide_id}.mp3"
-        cached = previous.get(slide_id)
-        if (
-            not force
-            and cached
-            and cached.get("hash") == text_hash
-            and audio_path.is_file()
-        ):
-            duration = float(cached["duration"])
-            print(f"  slide {slide_id}: cached narration ({duration:.2f}s)")
-        else:
-            print(f"  slide {slide_id}: synthesizing narration")
-            _synthesize(engine, text, voice, rate, audio_path)
-            duration = measure_duration(audio_path)
-            print(f"  slide {slide_id}: {duration:.2f}s")
-        slides[slide_id] = {
-            "file": audio_path.name,
-            "duration": round(duration, 3),
-            "hash": text_hash,
-            "text": text,
-        }
+        entry = _synth_entry(job, slide_id, _slide_text(slide), cfg, previous, force)
+        if entry:
+            slides[slide_id] = entry
+
+    # Static call-to-action spoken over the branded outro card.
+    if outro_enabled:
+        outro_entry = _synth_entry(
+            job, "outro", cfg.get("outro_narration"), cfg, previous, force
+        )
+        if outro_entry:
+            slides["outro"] = outro_entry
 
     manifest = {
-        "engine": engine,
-        "voice": voice,
-        "rate": rate,
+        "engine": cfg["engine"],
+        "voice": cfg["voice"],
+        "rate": cfg["rate"],
         "slides": slides,
     }
     job.narration_manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -140,12 +154,15 @@ def _build_manifest(job, explainer, cfg, force):
 
 def run_narrate(job, explainer, force=False):
     """Synthesize narration; return the manifest or None to fall back to music."""
-    cfg = video_settings(job)["voiceover"]
+    video_cfg = video_settings(job)
+    cfg = video_cfg["voiceover"]
     if not cfg["enabled"]:
         print("Voice-over disabled; using music-only audio.")
         return None
     try:
-        manifest = _build_manifest(job, explainer, cfg, force)
+        manifest = _build_manifest(
+            job, explainer, cfg, force, video_cfg["outro_enabled"]
+        )
     except (NarrationError, subprocess.CalledProcessError, OSError, ImportError) as exc:
         if cfg["on_tts_fail"] == "fail_job":
             raise NarrationError(f"Narration synthesis failed: {exc}") from exc
