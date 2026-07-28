@@ -121,6 +121,12 @@ DEFAULT_PLATE_OPACITY = 1.0
 DEFAULT_SHOW_EXPLANATION = True
 DEFAULT_SHOW_ROLE_KICKER = False
 BRAND_SIGNATURE = "Know the Big Picture"
+# Channel handle shown on the outro card.
+CHANNEL_HANDLE = "@knowthebigpicture"
+# On-screen call-to-action lines for the outro card (mirrors the spoken CTA).
+OUTRO_CARD_HOOK = "Enjoyed this?"
+OUTRO_CARD_CTA = "Like & Subscribe"
+OUTRO_CARD_SUBLINE = "You won't want to miss tomorrow's question."
 
 SAFE_MARGIN_X = 0.09
 SAFE_MARGIN_TOP = 0.10

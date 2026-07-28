@@ -10,22 +10,24 @@ from . import settings
 
 
 def make_outro_card(path):
-    """Fallback branded outro if no outro asset is supplied."""
+    """Fallback branded outro: a call-to-action plus the channel handle."""
     image = Image.new("RGB", (W, H), (14, 15, 18))
     draw = ImageDraw.Draw(image)
     cx = W // 2
 
-    promise_font = load_font(int(W * 0.058))
-    brand_font = load_font(int(W * 0.040))
-    cta_font = load_font(int(W * 0.034))
+    hook_font = load_font(int(W * 0.046))
+    cta_font = load_font(int(W * 0.072))
+    subline_font = load_font(int(W * 0.036))
+    handle_font = load_font(int(W * 0.044))
 
-    draw_centered(draw, cx, int(H * 0.42), "Understand the what.", promise_font, (255, 255, 255))
-    draw_centered(draw, cx, int(H * 0.42) + int(W * 0.07), "Discover the why and how.",
-                  promise_font, (255, 255, 255))
-    draw_centered(draw, cx, int(H * 0.56), settings.BRAND_SIGNATURE, brand_font,
+    draw_centered(draw, cx, int(H * 0.38), settings.OUTRO_CARD_HOOK, hook_font,
                   (176, 190, 210))
-    draw_centered(draw, cx, int(H * 0.62), "Subscribe to understand the world.", cta_font,
-                  (150, 150, 150))
+    draw_centered(draw, cx, int(H * 0.38) + int(W * 0.085), settings.OUTRO_CARD_CTA,
+                  cta_font, (255, 255, 255))
+    draw_centered(draw, cx, int(H * 0.53), settings.OUTRO_CARD_SUBLINE,
+                  subline_font, (176, 190, 210))
+    draw_centered(draw, cx, int(H * 0.60), settings.CHANNEL_HANDLE, handle_font,
+                  (108, 176, 255))
 
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, "JPEG", quality=92)
