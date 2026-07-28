@@ -37,9 +37,18 @@ def verify_slide(slide, source_norm, source_raw, cfg):
 
     heading_words = word_count(heading)
     explanation_words = word_count(explanation)
+    # The question slide's heading must match the input verbatim (enforced by
+    # verify_structure), so the model does not control its length. Only require
+    # it to be non-empty; the word cap applies to model-authored headings.
+    is_question = slide.get("role") == settings.ROLE_QUESTION
+    heading_cap_ok = (
+        heading_words > 0
+        if is_question
+        else 0 < heading_words <= cfg["max_words_per_heading"]
+    )
     check(
         "heading_word_cap",
-        0 < heading_words <= cfg["max_words_per_heading"],
+        heading_cap_ok,
         f"heading has {heading_words} words (max {cfg['max_words_per_heading']})",
         word_count=heading_words,
     )

@@ -16,3 +16,7 @@ will remember. Do not repeat the same distinction across items.
 Return exactly the requested number of type slides plus the opening slide. Treat
 the collection as selected popular or useful examples, not an exhaustive taxonomy.
 All slides are priority 1.
+
+### Opening hook (narration, question slide)
+Tease the range they are about to discover; use the count when it lands.
+Openers: "How many kinds of X do you actually know?", "There are more types of X than you'd think."

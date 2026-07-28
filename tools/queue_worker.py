@@ -193,6 +193,8 @@ def validate_job(row):
         "publish_instagram": normalize_bool(
             row.get("publish_instagram"), default=False
         ),
+        # Optional column; defaults on so existing sheets keep getting voice-over.
+        "voiceover": normalize_bool(row.get("voiceover"), default=True),
     }
 
 
@@ -277,6 +279,7 @@ def command_claim(queue):
     github_output("number_of_items", job["number_of_items"])
     github_output("youtube_public", str(job["youtube_public"]).lower())
     github_output("publish_instagram", str(job["publish_instagram"]).lower())
+    github_output("voiceover", str(job["voiceover"]).lower())
     print(f"Claimed queue job {job['id']}: {job['topic']}")
 
 

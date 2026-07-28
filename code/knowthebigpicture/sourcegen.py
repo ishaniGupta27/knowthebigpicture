@@ -92,6 +92,49 @@ def call_openai_text(system_prompt, user_message, model, api_key):
     return strip_code_fences(text)
 
 
+def call_gemini_text(system_prompt, user_message, model, api_key, temperature):
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    config_kwargs = {"system_instruction": system_prompt}
+    if settings.gemini_supports_temperature(model):
+        config_kwargs["temperature"] = temperature
+    response = client.models.generate_content(
+        model=model,
+        contents=user_message,
+        config=types.GenerateContentConfig(**config_kwargs),
+    )
+    text = getattr(response, "text", None)
+    if not text:
+        raise KtwError("Gemini source response did not contain text")
+    return strip_code_fences(text)
+
+
+def generate_source_text(system_prompt, user_message, cfg):
+    """Generate the source packet with the job's configured provider.
+
+    Gemini is the default. There is no automatic cross-provider fallback: set
+    parse.provider to "openai" explicitly to use OpenAI.
+    """
+    provider = cfg["provider"]
+    if provider == "gemini":
+        api_key = secret_value("GEMINI_API_KEY") or secret_value("GOOGLE_API_KEY")
+        if not api_key:
+            raise KtwError("GEMINI_API_KEY is not set")
+        model = secret_value("GEMINI_MODEL") or cfg["gemini_model"]
+        print(f"Generating source packet from question with Gemini model: {model}")
+        return call_gemini_text(
+            system_prompt, user_message, model, api_key, cfg["temperature"]
+        )
+    if provider == "openai":
+        api_key = secret_value("OPENAI_API_KEY", required=True)
+        model = secret_value("OPENAI_MODEL") or cfg["model"]
+        print(f"Generating source packet from question with OpenAI model: {model}")
+        return call_openai_text(system_prompt, user_message, model, api_key)
+    raise KtwError(f"Unknown LLM provider: {provider}")
+
+
 def ensure_source(job, dry_run=False):
     """Stage 0: create a reusable source packet when only a question is supplied."""
     if job.source_path.is_file() and job.source_path.read_text().strip():
@@ -121,19 +164,14 @@ def ensure_source(job, dry_run=False):
         return
 
     cfg = parse_settings(job)
-    api_key = secret_value("OPENAI_API_KEY", required=True)
-    model = secret_value("OPENAI_MODEL") or cfg["model"]
-
-    print(f"Generating source packet from question with OpenAI model: {model}")
-    source_text = call_openai_text(
+    source_text = generate_source_text(
         load_source_prompt(),
         (
             f"CONTENT FORMAT: {explainer_overrides(job)['content_format']}\n"
             f"REQUESTED ITEMS: {explainer_overrides(job)['item_count']}\n"
             f"{SOURCE_MARKER}\n{question}"
         ),
-        model,
-        api_key,
+        cfg,
     )
 
     job.source_path.parent.mkdir(parents=True, exist_ok=True)

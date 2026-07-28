@@ -13,3 +13,7 @@ should give the verdict promptly. End with what the viewer should remember or do
 
 Use 5-6 slides total, including the opening question slide. The verdict slide is
 priority 1.
+
+### Opening hook (narration, question slide)
+State the familiar belief, then cast honest doubt (a question, never a false claim).
+Openers: "You've probably heard that X. But is it actually true?", "Most people believe X. Here's the truth."

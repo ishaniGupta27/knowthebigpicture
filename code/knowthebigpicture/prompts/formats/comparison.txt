@@ -9,3 +9,7 @@ and the other casually. Do not declare a universal winner. End with the simplest
 useful guidance about when each fits.
 
 Use 5-6 slides total, including the opening question slide.
+
+### Opening hook (narration, question slide)
+Surface the common confusion between the two subjects.
+Openers: "X or Y, do you actually know the difference?", "People mix up X and Y all the time."

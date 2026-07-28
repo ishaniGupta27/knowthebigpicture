@@ -27,6 +27,19 @@ def require_present(name):
     return value
 
 
+def validate_gemini():
+    from google import genai
+
+    api_key = require_present("GEMINI_API_KEY")
+    model = secret_value("GEMINI_MODEL") or "gemini-3.6-flash"
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(model=model, contents="Return exactly: ok")
+    text = (getattr(response, "text", "") or "").strip()
+    if not text:
+        raise KtwError("Gemini validation returned no text")
+    print(f"OK GEMINI_API_KEY validated with Gemini ({model})")
+
+
 def validate_openai():
     import requests
 
@@ -121,6 +134,7 @@ def main(argv=None):
         description="Validate Know the Big Picture secrets without rendering or uploading."
     )
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("--gemini", action="store_true")
     parser.add_argument("--openai", action="store_true")
     parser.add_argument("--youtube", action="store_true")
     parser.add_argument("--instagram", action="store_true")
@@ -131,11 +145,15 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    if not any([args.all, args.openai, args.youtube, args.instagram, args.rclone]):
-        args.openai = True
+    if not any(
+        [args.all, args.gemini, args.openai, args.youtube, args.instagram, args.rclone]
+    ):
+        args.gemini = True
         args.youtube = True
 
     try:
+        if args.all or args.gemini:
+            validate_gemini()
         if args.all or args.openai:
             validate_openai()
         if args.all or args.youtube:

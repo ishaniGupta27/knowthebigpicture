@@ -60,13 +60,15 @@ def mock_parse(job, force=False):
             if index == 1
             else first_words(sentence, cfg["max_words_per_heading"])
         )
+        explanation = first_words(sentence, cfg["max_words_per_explanation"])
         slides.append(
             {
                 "id": index,
                 "role": role,
                 "heading": heading,
-                "explanation": first_words(
-                    sentence, cfg["max_words_per_explanation"]
+                "explanation": explanation,
+                "narration": ". ".join(
+                    part for part in (heading, explanation) if part
                 ),
                 "source_quotes": [sentence],
                 "image_prompt": (

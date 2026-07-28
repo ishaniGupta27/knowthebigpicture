@@ -7,7 +7,10 @@
     "item_count": 5
   },
   "parse": {
+    "provider": "gemini",
+    "gemini_model": "gemini-2.5-flash",
     "model": "gpt-5-mini",
+    "temperature": 0.7,
     "min_slides": 5,
     "max_slides": 6,
     "max_words_per_heading": 8,
@@ -15,6 +18,9 @@
     "on_verification_fail": "fail_job"
   },
   "images": {
+    "provider": "gemini",
+    "gemini_model": "gemini-2.5-flash-image",
+    "aspect_ratio": "9:16",
     "model": "gpt-image-1",
     "quality": "high",
     "vibe": "educational_documentary"
@@ -26,9 +32,17 @@
   },
   "video": {
     "min_seconds": 30,
-    "max_seconds": 60,
+    "max_seconds": 75,
     "motion": 0.06,
     "audio_track": null,
+    "voiceover": {
+      "enabled": true,
+      "engine": "edge",
+      "voice": "en-US-AndrewNeural",
+      "rate": "+0%",
+      "music_volume": 0.1,
+      "on_tts_fail": "music"
+    },
     "outro": {
       "enabled": true,
       "image": null

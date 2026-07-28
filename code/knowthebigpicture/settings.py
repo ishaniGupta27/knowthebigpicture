@@ -60,14 +60,35 @@ DEFAULT_TYPES_ITEM_COUNT = 5
 MIN_TYPES_ITEM_COUNT = 4
 MAX_TYPES_ITEM_COUNT = 12
 
+# Script/explainer text generation. Gemini is the default provider; OpenAI is
+# an explicit opt-in (set provider to "openai"), never an automatic fallback.
+DEFAULT_LLM_PROVIDER = "gemini"
+DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
+DEFAULT_LLM_TEMPERATURE = 0.7
+VALID_LLM_PROVIDERS = ("gemini", "openai")
+
+
+def gemini_supports_temperature(model):
+    """Gemini 3.x manages its own sampling; temperature/top_p/top_k are
+    deprecated and will error in future model generations. Only send
+    temperature to pre-3.x Gemini models."""
+    name = (model or "").lower()
+    for major in ("gemini-3", "gemini-4", "gemini-5"):
+        if name.startswith(major):
+            return False
+    return True
+
 DEFAULT_PARSE_MODEL = "gpt-5-mini"
 DEFAULT_MIN_SLIDES = 5
 DEFAULT_MAX_SLIDES = 6
 MAX_WORDS_PER_HEADING = 8
 MAX_WORDS_PER_EXPLANATION = 12
 
-DEFAULT_IMAGE_MODEL = "gpt-image-1"
-DEFAULT_IMAGE_QUALITY = "high"
+DEFAULT_IMAGE_PROVIDER = "gemini"
+DEFAULT_GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+DEFAULT_IMAGE_ASPECT_RATIO = "9:16"
+DEFAULT_IMAGE_MODEL = "gpt-image-1-mini"
+DEFAULT_IMAGE_QUALITY = "low"
 DEFAULT_VIBE = "educational_documentary"
 IMAGE_CONCURRENCY = 3
 IMAGE_RETRIES = 0
@@ -107,7 +128,7 @@ SAFE_MARGIN_BOTTOM = 0.16
 SAFE_MARGIN_RIGHT = 0.12
 
 DEFAULT_MIN_SECONDS = 30.0
-DEFAULT_MAX_SECONDS = 60.0
+DEFAULT_MAX_SECONDS = 75.0
 TIMING_BASE_BEAT = 1.7
 TIMING_PER_WORD = 0.24
 TIMING_READING_FLOOR = 3.8
@@ -130,6 +151,30 @@ MYTH_VERDICT_BONUS = 0.5
 DEFAULT_MOTION = 0.06
 DEFAULT_TRANSITION = "cut"
 DEFAULT_AUDIO_VOLUME = 0.25
+
+# Voice-over (narration). Default on; flip video.voiceover.enabled to false in
+# job.json to fall back to today's silent-slides + looped-music behavior.
+DEFAULT_VOICEOVER_ENABLED = True
+DEFAULT_TTS_ENGINE = "edge"
+DEFAULT_TTS_VOICE = "en-US-AndrewNeural"
+DEFAULT_TTS_RATE = "+0%"
+# Background music volume while narration plays (ducked well below the
+# music-only DEFAULT_AUDIO_VOLUME above).
+DEFAULT_VOICEOVER_MUSIC_VOLUME = 0.10
+# Silence padding, in seconds, around each slide's spoken line.
+NARRATION_LEAD_IN = 0.35
+NARRATION_TAIL_PAD = 0.6
+NARRATION_LEAD_IN_FLOOR = 0.15
+NARRATION_TAIL_PAD_FLOOR = 0.25
+# When narration cannot fit max_seconds, speed speech up (pitch-preserving)
+# by at most this factor before falling back to a small tolerance.
+ATEMPO_MAX = 1.15
+# Allow the finished plan to run up to this many seconds over max_seconds
+# rather than cutting a spoken line mid-sentence.
+OVERFLOW_TOLERANCE = 3.0
+# What to do if speech synthesis fails: "music" (silent slides + music) or
+# "fail_job".
+DEFAULT_ON_TTS_FAIL = "music"
 
 ASSETS_DIR = BASE_DIR / "assets"
 BRAND_STYLES_PATH = ASSETS_DIR / "brand" / "styles.json"

@@ -114,6 +114,53 @@ def call_openai(system_prompt, user_message, model, api_key):
     return parse_json_text(text)
 
 
+def call_gemini(system_prompt, user_message, model, api_key, temperature):
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    config_kwargs = {
+        "system_instruction": system_prompt,
+        "response_mime_type": "application/json",
+    }
+    if settings.gemini_supports_temperature(model):
+        config_kwargs["temperature"] = temperature
+    response = client.models.generate_content(
+        model=model,
+        contents=user_message,
+        config=types.GenerateContentConfig(**config_kwargs),
+    )
+    text = getattr(response, "text", None)
+    if not text:
+        raise KtwError("Gemini response did not contain text")
+    return parse_json_text(text)
+
+
+def generate_explainer(system_prompt, user_message, cfg):
+    """Generate the explainer JSON with the job's configured provider.
+
+    Gemini is the default. There is no automatic cross-provider fallback: set
+    parse.provider to "openai" explicitly to use OpenAI, otherwise a Gemini
+    failure fails the job.
+    """
+    provider = cfg["provider"]
+    if provider == "gemini":
+        api_key = secret_value("GEMINI_API_KEY") or secret_value("GOOGLE_API_KEY")
+        if not api_key:
+            raise KtwError("GEMINI_API_KEY is not set")
+        model = secret_value("GEMINI_MODEL") or cfg["gemini_model"]
+        print(f"Creating explainer with Gemini model: {model}")
+        return call_gemini(
+            system_prompt, user_message, model, api_key, cfg["temperature"]
+        )
+    if provider == "openai":
+        api_key = secret_value("OPENAI_API_KEY", required=True)
+        model = secret_value("OPENAI_MODEL") or cfg["model"]
+        print(f"Creating explainer with OpenAI model: {model}")
+        return call_openai(system_prompt, user_message, model, api_key)
+    raise KtwError(f"Unknown LLM provider: {provider}")
+
+
 def normalize_slides(raw_slides):
     if not isinstance(raw_slides, list) or not raw_slides:
         raise KtwError("Generation output must contain a non-empty 'slides' list")
@@ -127,12 +174,18 @@ def normalize_slides(raw_slides):
         quotes = raw.get("source_quotes") or []
         if isinstance(quotes, str):
             quotes = [quotes]
+        heading = (raw.get("heading") or "").strip()
+        explanation = (raw.get("explanation") or "").strip()
+        narration = (raw.get("narration") or "").strip()
+        if not narration:
+            narration = ". ".join(part for part in (heading, explanation) if part)
         slides.append(
             {
                 "id": index,
                 "role": role,
-                "heading": (raw.get("heading") or "").strip(),
-                "explanation": (raw.get("explanation") or "").strip(),
+                "heading": heading,
+                "explanation": explanation,
+                "narration": narration,
                 "source_quotes": quotes,
                 "image_prompt": (raw.get("image_prompt") or "").strip(),
                 "priority": int(raw.get("priority", 1 if role == "question" else 2)),
@@ -197,16 +250,13 @@ def run_parse(job, force=False):
     cfg = parse_settings(job)
     question = read_question(job)
     source_text = read_source(job)
-    model = secret_value("OPENAI_MODEL") or cfg["model"]
-    print(f"Creating explainer with OpenAI model: {model}")
-    parsed = call_openai(
+    system_prompt = (
         load_system_prompt()
         + "\n\n## Selected format instructions\n\n"
-        + load_format_prompt(explainer_overrides(job)["content_format"]),
-        build_user_message(job, cfg, question, source_text),
-        model,
-        secret_value("OPENAI_API_KEY", required=True),
+        + load_format_prompt(explainer_overrides(job)["content_format"])
     )
+    user_message = build_user_message(job, cfg, question, source_text)
+    parsed = generate_explainer(system_prompt, user_message, cfg)
     if isinstance(parsed, dict) and parsed.get("error") == "insufficient_source":
         raise InsufficientSourceError(
             parsed.get("reason", "the source cannot support a grounded explanation")

@@ -22,6 +22,19 @@ def parse_args(argv):
     parser.add_argument("--item-count", type=int)
     parser.add_argument("--youtube-public", action="store_true")
     parser.add_argument("--instagram", action="store_true")
+    parser.add_argument(
+        "--voiceover",
+        dest="voiceover",
+        action="store_true",
+        default=True,
+        help="Enable AI voice-over narration (default).",
+    )
+    parser.add_argument(
+        "--no-voiceover",
+        dest="voiceover",
+        action="store_false",
+        help="Disable voice-over; use silent slides + background music.",
+    )
     parser.add_argument("--jobs-dir", default=None)
     return parser.parse_args(argv)
 
@@ -58,6 +71,9 @@ def create_job(args):
 
     config = {
         "explainer": explainer,
+        "video": {
+            "voiceover": {"enabled": bool(args.voiceover)},
+        },
         "youtube": {
             "enabled": True,
             "upload_type": "short",

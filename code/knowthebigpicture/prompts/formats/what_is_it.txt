@@ -11,3 +11,7 @@ subject does before naming how specialists classify it. Answer "why should I
 care?" as well as "what is it?"
 
 Use 5-6 slides total, including the opening question slide.
+
+### Opening hook (narration, question slide)
+Acknowledge they have heard of it, then promise the real answer.
+Openers: "You've heard of X, but do you actually know what it is?", "Everyone talks about X. Here's what it really is."

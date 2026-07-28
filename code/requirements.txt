@@ -1,7 +1,9 @@
 certifi==2026.6.17
 charset-normalizer==3.4.7
 decorator==5.3.1
+edge-tts==7.2.8
 google-auth>=2.40.0,<3
+google-genai>=1.40.0,<3
 idna==3.18
 ImageIO==2.37.2
 imageio-ffmpeg==0.6.0

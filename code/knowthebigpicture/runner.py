@@ -4,6 +4,7 @@ from .dry_run import mock_images, mock_parse
 from .images import run_images
 from .instagram import publish_reel
 from .job import youtube_settings
+from .narrate import mock_narrate, run_narrate
 from .parse import run_parse
 from .renderplan import build_render_plan
 from .sourcegen import ensure_source
@@ -84,6 +85,13 @@ def run_job(
                 "video_cached": True,
             }
         else:
+            log_section("STAGE 2c  NARRATE")
+            narration = (
+                mock_narrate(job, explainer, force=force)
+                if dry_run
+                else run_narrate(job, explainer, force=force)
+            )
+
             log_section("STAGE 3  IMAGES")
             image_results = (
                 mock_images(job, explainer, force=force)
@@ -95,8 +103,8 @@ def run_job(
             frames = run_compose(job, explainer)
 
             log_section("STAGE 5  RENDER")
-            render_plan = build_render_plan(job, explainer)
-            video_path = run_video(job, explainer, render_plan)
+            render_plan = build_render_plan(job, explainer, narration=narration)
+            video_path = run_video(job, explainer, render_plan, narration=narration)
 
             outputs = {
                 "explainer": str(job.explainer_path),

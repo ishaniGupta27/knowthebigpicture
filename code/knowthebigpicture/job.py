@@ -24,6 +24,8 @@ class Job:
     render_plan_path: Path
     backgrounds_dir: Path
     frames_dir: Path
+    narration_dir: Path
+    narration_manifest_path: Path
     video_path: Path
 
     def section(self, name):
@@ -65,6 +67,8 @@ def load_job(job_id, jobs_root):
         render_plan_path=outputs_dir / "render_plan.json",
         backgrounds_dir=outputs_dir / "backgrounds",
         frames_dir=outputs_dir / "frames",
+        narration_dir=outputs_dir / "narration",
+        narration_manifest_path=outputs_dir / "narration" / "narration.json",
         video_path=outputs_dir / "explainer.mp4",
     )
     validate_job(job)
@@ -92,8 +96,17 @@ def parse_settings(job):
     else:
         default_min_slides = settings.DEFAULT_MIN_SLIDES
         default_max_slides = settings.DEFAULT_MAX_SLIDES
+    provider = parse.get("provider") or settings.DEFAULT_LLM_PROVIDER
+    if provider not in settings.VALID_LLM_PROVIDERS:
+        available = ", ".join(settings.VALID_LLM_PROVIDERS)
+        raise KtwError(f"parse.provider must be one of: {available}")
     return {
+        "provider": provider,
         "model": parse.get("model") or settings.DEFAULT_PARSE_MODEL,
+        "gemini_model": parse.get("gemini_model") or settings.DEFAULT_GEMINI_MODEL,
+        "temperature": float(
+            parse.get("temperature", settings.DEFAULT_LLM_TEMPERATURE)
+        ),
         "min_slides": int(parse.get("min_slides", default_min_slides)),
         "max_slides": int(parse.get("max_slides", default_max_slides)),
         "max_words_per_heading": int(
@@ -108,11 +121,20 @@ def parse_settings(job):
 
 def image_settings(job):
     images = job.section("images")
+    provider = images.get("provider") or settings.DEFAULT_IMAGE_PROVIDER
+    if provider not in settings.VALID_LLM_PROVIDERS:
+        available = ", ".join(settings.VALID_LLM_PROVIDERS)
+        raise KtwError(f"images.provider must be one of: {available}")
     model = images.get("model") or settings.DEFAULT_IMAGE_MODEL
     return {
+        "provider": provider,
         "model": model,
+        "gemini_model": images.get("gemini_model")
+        or settings.DEFAULT_GEMINI_IMAGE_MODEL,
         "vibe": images.get("vibe"),
         "size": images.get("size") or settings.image_size_for_model(model),
+        "aspect_ratio": images.get("aspect_ratio")
+        or settings.DEFAULT_IMAGE_ASPECT_RATIO,
         "quality": images.get("quality") or settings.DEFAULT_IMAGE_QUALITY,
     }
 
@@ -145,6 +167,24 @@ def video_settings(job):
         "audio_track": video.get("audio_track"),
         "audio_volume": float(video.get("audio_volume", settings.DEFAULT_AUDIO_VOLUME)),
         "outro_enabled": bool(outro.get("enabled", True)),
+        "voiceover": voiceover_settings(job),
+    }
+
+
+def voiceover_settings(job):
+    video = job.section("video")
+    cfg = video.get("voiceover", {})
+    if not isinstance(cfg, dict):
+        raise KtwError("video.voiceover must be an object")
+    return {
+        "enabled": bool(cfg.get("enabled", settings.DEFAULT_VOICEOVER_ENABLED)),
+        "engine": cfg.get("engine") or settings.DEFAULT_TTS_ENGINE,
+        "voice": cfg.get("voice") or settings.DEFAULT_TTS_VOICE,
+        "rate": cfg.get("rate") or settings.DEFAULT_TTS_RATE,
+        "music_volume": float(
+            cfg.get("music_volume", settings.DEFAULT_VOICEOVER_MUSIC_VOLUME)
+        ),
+        "on_tts_fail": cfg.get("on_tts_fail") or settings.DEFAULT_ON_TTS_FAIL,
     }
 
 

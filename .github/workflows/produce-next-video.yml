@@ -3,8 +3,8 @@ name: Produce Next Queued Video
 on:
   workflow_dispatch:
   schedule:
-    # 9:00 AM and 9:00 PM EST (10:00 AM/PM during EDT).
-    - cron: "0 2,14 * * *"
+    # 9:27 AM and 9:27 PM EST (10:27 AM/PM during EDT).
+    - cron: "27 2,14 * * *"
 
 permissions:
   contents: read
@@ -49,7 +49,7 @@ jobs:
           RCLONE_CONFIG_SECRET: ${{ secrets.RCLONE_CONFIG }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEET_ID_SECRET: ${{ secrets.GOOGLE_SHEET_ID }}
-          OPENAI_API_KEY_SECRET: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY_SECRET: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_CLIENT_ID_SECRET: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN_SECRET: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
@@ -58,7 +58,7 @@ jobs:
             RCLONE_CONFIG_SECRET \
             GOOGLE_SERVICE_ACCOUNT_JSON \
             GOOGLE_SHEET_ID_SECRET \
-            OPENAI_API_KEY_SECRET \
+            GEMINI_API_KEY_SECRET \
             YOUTUBE_CLIENT_ID_SECRET \
             YOUTUBE_CLIENT_SECRET_SECRET \
             YOUTUBE_REFRESH_TOKEN_SECRET
@@ -124,6 +124,7 @@ jobs:
           NUMBER_OF_ITEMS: ${{ steps.queue.outputs.number_of_items }}
           YOUTUBE_PUBLIC: ${{ steps.queue.outputs.youtube_public }}
           PUBLISH_INSTAGRAM: ${{ steps.queue.outputs.publish_instagram }}
+          VOICEOVER: ${{ steps.queue.outputs.voiceover }}
         run: |
           args=(
             python -m knowthebigpicture.create_job
@@ -141,12 +142,18 @@ jobs:
           if [ "${PUBLISH_INSTAGRAM}" = "true" ]; then
             args+=(--instagram)
           fi
+          if [ "${VOICEOVER}" = "false" ]; then
+            args+=(--no-voiceover)
+          else
+            args+=(--voiceover)
+          fi
           "${args[@]}"
 
       - name: Generate video
         if: ${{ steps.queue.outputs.has_job == 'true' }}
         working-directory: code
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JOB_ID: ${{ steps.queue.outputs.job_id }}
         run: |

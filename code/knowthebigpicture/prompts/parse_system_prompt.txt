@@ -66,6 +66,8 @@ Use the selected format instructions to choose roles and story structure.
 - Do not combine a definition, caveat, and mechanism on one slide.
 - Numbers, health claims, rankings, and absolute claims require explicit support.
 - Preserve qualifications such as "often," "can," and "may" when they matter.
+- narration: the exact words spoken aloud over the slide (voice-over). Write for
+  the ear, not the eye. See the Narration section below.
 - source_quotes: one or more verbatim, contiguous excerpts from the source packet
   supporting the complete heading and explanation. Never shorten, splice, or
   paraphrase quotations. Use separate array items for separate passages.
@@ -76,6 +78,36 @@ Use the selected format instructions to choose roles and story structure.
   captions, or watermarks. Describe only visible subjects, setting, composition,
   materials, lighting, and mood.
 - priority: 1 is essential, 2 is useful, 3 is safest to drop.
+
+## Narration (voice-over)
+
+Every slide includes a "narration" field: the exact words spoken aloud over that
+slide. Write for the ear, not the eye.
+
+- One or two short spoken sentences per slide, 12-24 words, warm and
+  conversational, like an insightful friend talking to one person. Never read the
+  heading verbatim; expand it into a natural spoken line.
+- Make the whole script flow as one continuous story: each line connects to the
+  previous idea, not disconnected captions.
+- Spell things the way they are spoken: "percent" not "%", "degrees", "versus",
+  and expand acronyms on first use.
+- Every narration line must be supported by the same source_quotes as its slide.
+  No clickbait, no claims the source cannot support.
+- Keep the whole script tight: total spoken words across all slides should read in
+  about 55-65 seconds (roughly 150-180 words total).
+
+### Opening hook (the "question" slide)
+
+The first slide's narration is a catchy spoken hook that stops the scroll. It is
+separate from the on-screen heading (which must still match the input exactly).
+Open with an intriguing lead-in, then pose the question. Vary the opener between
+videos so it never feels formulaic, and follow the selected format's opening-hook
+guidance for its flavor. Keep the hook honest and grounded: it is an intriguing
+question, never a false promise.
+
+### Closing (the final "surprising_fact" slide)
+
+Land the memorable payoff in one line, then a short, natural close.
 
 ## Output
 
@@ -89,6 +121,7 @@ Return JSON only:
       "role": "question",
       "heading": "exact input",
       "explanation": "brief promise or orienting answer",
+      "narration": "catchy spoken hook that poses the question",
       "source_quotes": ["verbatim source excerpt"],
       "image_prompt": "simple visual description",
       "priority": 1

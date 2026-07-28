@@ -203,16 +203,69 @@ def save_image_response(response_json, path):
     image.save(path, "JPEG", quality=95, subsampling=0)
 
 
-def generate_node_background(
-    node,
-    job,
-    vibe_prompt,
-    model,
-    size,
-    quality,
-    api_key,
-    force=False,
-):
+def save_pil_image(image, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, "JPEG", quality=95, subsampling=0)
+
+
+def request_image_gemini(prompt, model, aspect_ratio, api_key):
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_modalities=["IMAGE"],
+            image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
+        ),
+    )
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        for part in getattr(content, "parts", None) or []:
+            inline = getattr(part, "inline_data", None)
+            if inline is not None and getattr(inline, "data", None):
+                try:
+                    return Image.open(io.BytesIO(inline.data)).convert("RGB")
+                except (ValueError, OSError, UnidentifiedImageError) as exc:
+                    raise InvalidGeneratedImage(
+                        f"Gemini returned an unreadable image: {exc}"
+                    ) from exc
+    # No image returned: distinguish a safety block from an empty response.
+    for candidate in candidates:
+        reason = str(getattr(candidate, "finish_reason", "") or "").upper()
+        if any(marker in reason for marker in ("SAFETY", "PROHIBITED", "BLOCK")):
+            raise PolicyRefusal(f"Gemini blocked image ({reason})")
+    feedback = getattr(response, "prompt_feedback", None)
+    if feedback is not None and getattr(feedback, "block_reason", None):
+        raise PolicyRefusal(f"Gemini blocked prompt ({feedback.block_reason})")
+    raise InvalidGeneratedImage("Gemini image response contained no image")
+
+
+def _provider_image(provider, prompt, cfg):
+    """Return a validated PIL image from the configured provider, or raise.
+
+    Gemini is the default. There is no automatic cross-provider fallback: set
+    images.provider to "openai" explicitly to use OpenAI.
+    """
+    if provider == "gemini":
+        api_key = secret_value("GEMINI_API_KEY") or secret_value("GOOGLE_API_KEY")
+        if not api_key:
+            raise KtwError("GEMINI_API_KEY is not set")
+        model = secret_value("GEMINI_IMAGE_MODEL") or cfg["gemini_model"]
+        image = request_image_gemini(prompt, model, cfg["aspect_ratio"], api_key)
+        validate_generated_image(image)
+        return image
+    if provider == "openai":
+        api_key = secret_value("OPENAI_API_KEY", required=True)
+        result = request_image(prompt, cfg["model"], cfg["size"], cfg["quality"], api_key)
+        return decode_image_response(result)
+    raise KtwError(f"Unknown image provider: {provider}")
+
+
+def generate_node_background(node, job, vibe_prompt, cfg, force=False):
     node_id = node["id"]
     path = job.backgrounds_dir / f"{node_id}.jpg"
     if path.is_file() and not force:
@@ -220,18 +273,19 @@ def generate_node_background(
 
     scene = node.get("image_prompt")
     if not scene:
-        make_neutral_background(path, size)
+        make_neutral_background(path, cfg["size"])
         return {"id": node_id, "status": "neutral_no_prompt"}
 
     prompt = build_prompt(vibe_prompt, scene)
+    provider = cfg["provider"]
     for attempt in range(2):
         try:
-            result = request_image(prompt, model, size, quality, api_key)
-            save_image_response(result, path)
+            image = _provider_image(provider, prompt, cfg)
+            save_pil_image(image, path)
             status = "generated" if attempt == 0 else "generated_after_invalid_retry"
             return {"id": node_id, "status": status}
         except PolicyRefusal:
-            make_neutral_background(path, size)
+            make_neutral_background(path, cfg["size"])
             return {"id": node_id, "status": "neutral_fallback"}
         except InvalidGeneratedImage as exc:
             if attempt == 0:
@@ -244,7 +298,7 @@ def generate_node_background(
                 f"  node {node_id}: replacement image also unusable ({exc}); "
                 "using local neutral background"
             )
-            make_neutral_background(path, size)
+            make_neutral_background(path, cfg["size"])
             return {"id": node_id, "status": "neutral_after_invalid_retry"}
 
     raise InvalidGeneratedImage("image generation ended without a usable result")
@@ -254,31 +308,23 @@ def run_images(job, explainer, force=False):
     """Stage 3: generate one 9:16 educational background per slide."""
     cfg = image_settings(job)
     vibe_name, vibe_prompt = load_vibe_prompt(job, cfg["vibe"])
-    api_key = secret_value("OPENAI_API_KEY", required=True)
-    model = cfg["model"]
-    size = cfg["size"]
-    quality = cfg["quality"]
 
     job.backgrounds_dir.mkdir(parents=True, exist_ok=True)
     nodes = explainer.get("slides", [])
+    if cfg["provider"] == "gemini":
+        model_desc = f"model={cfg['gemini_model']}, aspect_ratio={cfg['aspect_ratio']}"
+    else:
+        model_desc = f"model={cfg['model']}, size={cfg['size']}, quality={cfg['quality']}"
     print(
         "Generating backgrounds: "
-        f"model={model}, vibe={vibe_name}, size={size}, quality={quality}"
+        f"provider={cfg['provider']}, {model_desc}, vibe={vibe_name}"
     )
 
     results = []
     with ThreadPoolExecutor(max_workers=settings.IMAGE_CONCURRENCY) as pool:
         futures = {
             pool.submit(
-                generate_node_background,
-                node,
-                job,
-                vibe_prompt,
-                model,
-                size,
-                quality,
-                api_key,
-                force,
+                generate_node_background, node, job, vibe_prompt, cfg, force
             ): node["id"]
             for node in nodes
         }

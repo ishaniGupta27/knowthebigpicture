@@ -11,3 +11,7 @@ science, history, or engineering lesson. Stop at the first satisfying explanatio
 End with the clearest result or implication, not unrelated trivia.
 
 Use 5-6 slides total, including the opening question slide.
+
+### Opening hook (narration, question slide)
+Name something the viewer has seen but never questioned, then ask why.
+Openers: "Have you ever wondered why...", "Ever noticed X, but never knew why?"
