@@ -15,11 +15,34 @@ def word_count(text):
     return len((text or "").split())
 
 
-def quote_match(quote, source_norm, source_raw):
-    if quote in source_raw:
+ELLIPSIS_RE = re.compile(r"\s*(?:\.{2,}|\u2026)\s*")
+
+
+def _fragment_match(fragment, source_norm, source_raw):
+    if not fragment:
+        return None
+    if fragment in source_raw:
         return "exact"
-    if normalize(quote) and normalize(quote) in source_norm:
+    if normalize(fragment) and normalize(fragment) in source_norm:
         return "normalized"
+    return None
+
+
+def quote_match(quote, source_norm, source_raw):
+    quote = quote or ""
+    direct = _fragment_match(quote, source_norm, source_raw)
+    if direct:
+        return direct
+    # LLMs (Gemini especially) often abbreviate a citation with an ellipsis,
+    # e.g. "...largely false for plain produce...". That is never a verbatim
+    # substring, but each piece around the ellipsis still must appear in the
+    # source. Accept the quote only when every non-empty fragment is grounded.
+    if ELLIPSIS_RE.search(quote):
+        fragments = [f for f in ELLIPSIS_RE.split(quote) if f.strip()]
+        if fragments and all(
+            _fragment_match(f.strip(), source_norm, source_raw) for f in fragments
+        ):
+            return "fragmented"
     return None
 
 

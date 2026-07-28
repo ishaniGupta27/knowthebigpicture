@@ -70,7 +70,10 @@ Use the selected format instructions to choose roles and story structure.
   the ear, not the eye. See the Narration section below.
 - source_quotes: one or more verbatim, contiguous excerpts from the source packet
   supporting the complete heading and explanation. Never shorten, splice, or
-  paraphrase quotations. Use separate array items for separate passages.
+  paraphrase quotations. Never use an ellipsis ("..." or "…") to trim or join
+  text: copy an unbroken run of characters exactly as it appears in the source.
+  To cite two separate passages, put each in its own array item instead of
+  joining them with "...".
 - image_prompt: one simple, recognizable visual supporting the slide. Show one
   subject or action with few objects and a naturally calm, unobstructed central
   area. Never request any writing, letters, numbers, symbols, labels, logos,
