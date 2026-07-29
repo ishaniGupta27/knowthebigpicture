@@ -134,7 +134,7 @@ SAFE_MARGIN_BOTTOM = 0.16
 SAFE_MARGIN_RIGHT = 0.12
 
 DEFAULT_MIN_SECONDS = 30.0
-DEFAULT_MAX_SECONDS = 75.0
+DEFAULT_MAX_SECONDS = 50.0
 TIMING_BASE_BEAT = 1.7
 TIMING_PER_WORD = 0.24
 TIMING_READING_FLOOR = 3.8
@@ -167,16 +167,20 @@ DEFAULT_AUDIO_VOLUME = 0.25
 # job.json to fall back to today's silent-slides + looped-music behavior.
 DEFAULT_VOICEOVER_ENABLED = True
 DEFAULT_TTS_ENGINE = "edge"
-DEFAULT_TTS_VOICE = "en-US-AndrewNeural"
-DEFAULT_TTS_RATE = "+0%"
+DEFAULT_TTS_VOICE = "en-US-EmmaNeural"
+DEFAULT_TTS_RATE = "+10%"
 # Background music volume while narration plays (ducked well below the
 # music-only DEFAULT_AUDIO_VOLUME above).
 DEFAULT_VOICEOVER_MUSIC_VOLUME = 0.10
 # Silence padding, in seconds, around each slide's spoken line.
-NARRATION_LEAD_IN = 0.35
-NARRATION_TAIL_PAD = 0.6
-NARRATION_LEAD_IN_FLOOR = 0.15
-NARRATION_TAIL_PAD_FLOOR = 0.25
+NARRATION_LEAD_IN = 0.25
+NARRATION_TAIL_PAD = 0.35
+NARRATION_LEAD_IN_FLOOR = 0.12
+NARRATION_TAIL_PAD_FLOOR = 0.2
+# Minimum on-screen time for a narrated slide, so a short line never flashes.
+# When narration is present, slide length follows speech + pad (not the silent
+# reading estimate), which keeps pacing tight and avoids dead air after the VO.
+NARRATION_MIN_SLIDE = 2.0
 # When narration cannot fit max_seconds, speed speech up (pitch-preserving)
 # by at most this factor before falling back to a small tolerance.
 ATEMPO_MAX = 1.15

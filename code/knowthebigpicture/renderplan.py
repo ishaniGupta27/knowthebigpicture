@@ -67,10 +67,13 @@ def _speech_duration(narration, slide_id):
 
 
 def _voiced_duration(read_floor, speech, pad, speed):
-    """Slide time: long enough to read the text AND speak the line."""
+    """Slide time for a narrated slide: follow the spoken line (plus a small
+    pad), not the silent-reading estimate. This keeps pacing tight and avoids
+    dead air lingering after the voice-over ends. ``read_floor`` still applies
+    to unvoiced slides."""
     if speech <= 0:
         return read_floor
-    return max(read_floor, pad + speech / speed)
+    return max(settings.NARRATION_MIN_SLIDE, pad + speech / speed)
 
 
 def _plan_total(kept, reads, speeches, pad, speed, outro_duration):

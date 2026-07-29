@@ -87,26 +87,40 @@ Use the selected format instructions to choose roles and story structure.
 Every slide includes a "narration" field: the exact words spoken aloud over that
 slide. Write for the ear, not the eye.
 
-- One or two short spoken sentences per slide, 12-24 words, warm and
-  conversational, like an insightful friend talking to one person. Never read the
-  heading verbatim; expand it into a natural spoken line.
+- One short spoken sentence per slide, 8-16 words, warm and conversational, like
+  an insightful friend talking to one person. Cut every filler word. Never read
+  the heading verbatim; expand it into a natural spoken line.
 - Make the whole script flow as one continuous story: each line connects to the
   previous idea, not disconnected captions.
 - Spell things the way they are spoken: "percent" not "%", "degrees", "versus",
   and expand acronyms on first use.
 - Every narration line must be supported by the same source_quotes as its slide.
   No clickbait, no claims the source cannot support.
-- Keep the whole script tight: total spoken words across all slides should read in
-  about 55-65 seconds (roughly 150-180 words total).
+- Keep the whole script very tight for short-form retention: total spoken words
+  across all slides should read in about 30-40 seconds (roughly 90-115 words
+  total). Shorter is better as long as it stays clear.
 
 ### Opening hook (the "question" slide)
 
-The first slide's narration is a catchy spoken hook that stops the scroll. It is
-separate from the on-screen heading (which must still match the input exactly).
-Open with an intriguing lead-in, then pose the question. Vary the opener between
-videos so it never feels formulaic, and follow the selected format's opening-hook
-guidance for its flavor. Keep the hook honest and grounded: it is an intriguing
-question, never a false promise.
+The first slide's narration is a punchy spoken hook that stops the scroll in the
+first two seconds. It is separate from the on-screen heading (which must still
+match the input exactly).
+
+- Keep it SHORT: aim for 6-12 spoken words, ideally one line that could be two
+  very short beats. Front-load the intrigue; lead with the surprising thing, not
+  a slow wind-up.
+- Cut warm-up phrases. Avoid long lead-ins like "Have you ever noticed how..."
+  or "Ever wondered why it is that...". Get to the hook fast.
+- End on the question or the tension, not an explanation.
+- Vary the opener between videos so it never feels formulaic, and follow the
+  selected format's opening-hook guidance for its flavor. Keep it honest and
+  grounded: an intriguing question, never a false promise.
+
+Examples (avocado turning brown):
+- Weak (too wordy): "Have you ever noticed how a freshly sliced avocado turns
+  brown so quickly, and wondered why it actually happens?"
+- Strong (punchy): "Slice an avocado and it browns in minutes. Why?"
+- Strong (punchy): "Your avocado is rusting. Here's why."
 
 ### Closing (the final "surprising_fact" slide)
 

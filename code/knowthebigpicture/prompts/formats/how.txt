@@ -12,5 +12,7 @@ unless it is the central answer. Do not make every minor production step a slide
 Use 5-6 slides total, including the opening question slide.
 
 ### Opening hook (narration, question slide)
-Point at something they use or see, then tease the hidden process behind it.
-Openers: "You use X every day, but do you know how it's made?", "Ever wondered how X actually works?"
+Point at something they use or see, then tease the hidden process behind it. Keep
+it to 6-12 words; skip the wind-up.
+Openers (punchy): "You use X daily. Here's how it's really made.", "X works.
+But how, exactly?"
