@@ -9,19 +9,20 @@ updates the row.
 The spreadsheet file may have any name and may live anywhere in Google Drive.
 Its worksheet tab must be named exactly `VideoQueue`.
 
-Row 1 must contain these exact headers in this order:
+Row 1 must contain these required headers. The optional `voiceover` column may
+appear anywhere:
 
 ```text
-id	status	format	topic	number_of_items	youtube_public	publish_instagram	created_at	started_at	completed_at	output_url	error	retry_count
+id	status	format	topic	number_of_items	youtube_public	publish_instagram	voiceover	created_at	started_at	completed_at	output_url	error	retry_count
 ```
 
 Example rows:
 
 ```text
-id	status	format	topic	number_of_items	youtube_public	publish_instagram	created_at	started_at	completed_at	output_url	error	retry_count
-1	new	why	Why does pineapple burn your tongue?		FALSE	FALSE	2026-07-27					0
-2	new	types	10 Types of Dumplings Explained	10	FALSE	FALSE	2026-07-27					0
-3	new	myth_vs_fact	Is brown rice always healthier than white rice?		TRUE	FALSE	2026-07-27					0
+id	status	format	topic	number_of_items	youtube_public	publish_instagram	voiceover	created_at	started_at	completed_at	output_url	error	retry_count
+1	new	why	Why does pineapple burn your tongue?		FALSE	FALSE	TRUE	2026-07-27					0
+2	new	types	10 Types of Dumplings Explained	10	FALSE	FALSE	TRUE	2026-07-27					0
+3	new	myth_vs_fact	Is brown rice always healthier than white rice?		TRUE	FALSE	FALSE	2026-07-27					0
 ```
 
 The worker recognizes these states:
@@ -45,7 +46,11 @@ Every completed video is uploaded to YouTube as a Short:
 - `youtube_public=TRUE` uploads it publicly.
 - `youtube_public=FALSE` or blank uploads it privately.
 
-Instagram is opt-in. It is attempted only when `publish_instagram=TRUE`.
+Instagram is opt-in. When `publish_instagram=TRUE`, the queue-created job uses
+`container_only`: it creates and validates the Reel container but does not make
+the Reel live.
+Voice-over is on when `voiceover` is `TRUE` or blank. Set it to `FALSE` for
+music-only output. This column is optional so older Sheets remain compatible.
 
 ## Google authentication
 
@@ -59,7 +64,8 @@ Add these GitHub Actions repository secrets:
 - `GOOGLE_SERVICE_ACCOUNT_JSON`: complete contents of the service-account JSON.
 - `GOOGLE_SHEET_ID`: text between `/d/` and `/edit` in the Sheet URL.
 - `RCLONE_CONFIG`: rclone config containing the `kbpdrive` remote.
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`: source packet and explainer generation.
+- `OPENAI_API_KEY`: the package-default image provider.
 - `YOUTUBE_CLIENT_ID`
 - `YOUTUBE_CLIENT_SECRET`
 - `YOUTUBE_REFRESH_TOKEN`
@@ -71,15 +77,17 @@ The Sheets service account is independent from YouTube OAuth and rclone.
 
 The `Produce Next Queued Video` workflow:
 
-1. Runs at 9:00 AM and 9:00 PM EST (10:00 AM and 10:00 PM during EDT), or
-   manually through `workflow_dispatch`.
+1. Runs at 9:27 AM and 9:27 PM EST (10:27 AM and 10:27 PM during EDT), or
+   manually through `workflow_dispatch`. This is 6:27 AM/PM PST or
+   7:27 AM/PM PDT.
 2. Selects the pending row with the lowest numeric ID.
 3. Immediately marks it `processing`.
 4. Performs a real, full video generation.
-5. Uploads a public or private YouTube Short.
-6. Optionally publishes to Instagram.
-7. Copies the job to `kbpdrive:jobs/<id>`.
-8. Marks the row `done` and stores the YouTube Shorts URL.
+5. Produces voice-over unless the row explicitly disables it.
+6. Uploads a public or private YouTube Short.
+7. Optionally creates and validates an Instagram Reel container.
+8. Copies the job to `kbpdrive:jobs/<id>`.
+9. Marks the row `done` and stores the YouTube Shorts URL.
 
 Only one queue workflow can run at a time. If a step fails after a row is
 claimed, the row is marked `failed`, the attempt count is incremented, and the

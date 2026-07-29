@@ -263,16 +263,21 @@ new angles.
 
 ## GitHub Actions Mapping
 
-Use the generated idea in the workflow:
+Add a generated idea to the `VideoQueue` Sheet:
 
 ```text
-Content format:     why | how | types | comparison | what_is_it | myth_vs_fact
-Topic or question:  exact title/input
-Execution mode:     real
+status:             new or pending
+format:             why | how | types | comparison | what_is_it | myth_vs_fact
+topic:              exact title/input
+number_of_items:    4-12 for Types; blank otherwise
+youtube_public:     TRUE for public; blank/FALSE for private
+publish_instagram:  TRUE to create/validate an Instagram Reel container
+voiceover:          blank/TRUE for narration; FALSE for music-only
 ```
 
-For Types, begin the title with the desired count, such as
-`8 Coffee Drinks Explained`. Titles without a leading count default to 5 items.
-Local jobs may override the count with `explainer.item_count` in `job.json`.
+`new` saves an idea without producing it. `pending` approves it for the next
+manual or scheduled queue run. For Types, an explicit `number_of_items` wins;
+otherwise a leading title number such as `8 Coffee Drinks Explained` is used,
+or the count defaults to 5.
 
 Always use a new numeric job ID for a new idea.

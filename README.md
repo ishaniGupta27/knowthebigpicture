@@ -15,16 +15,19 @@ right storytelling shape: `why`, `how`, `types`, `comparison`, `what_is_it`, and
 ## Pipeline
 
 ```text
-question → source packet → explain → verify → images → compose → render → publish
+question → source → explain → verify → content → narrate → images → compose → render → publish
 ```
 
 0. **Source** — reuse `source.txt`, create a real source packet from
    `question.txt`, or create a local placeholder source during `--dry-run`.
 1. **Explain** — generate `explainer.json` and YouTube metadata in one call.
 2. **Verify** — check the question slide, structure, word limits, and quotations.
+2b. **Content** — write the verified platform-neutral content artifact.
+2c. **Narrate** — synthesize and cache per-slide and outro speech.
 3. **Images** — generate one teaching-oriented 9:16 visual per slide.
 4. **Compose** — add the role, heading, explanation, and brand signature.
-5. **Render** — create `explainer.mp4` with derived timing and an optional outro.
+5. **Render** — time slides from speech, mix narration with ducked music, and
+   create `explainer.mp4` with an optional outro.
 6. **Publish** — optionally upload to YouTube Shorts and/or Instagram Reels.
 
 Stages cache their outputs, so interrupted jobs can resume without repeating
@@ -42,6 +45,7 @@ jobs/<id>/
     explainer.json
     content.json
     youtube_metadata.json
+    narration/
     backgrounds/
     frames/
     render_plan.json
@@ -90,9 +94,11 @@ The important controls are:
 - `explainer.question`, `subject`, and `audience`
 - `explainer.content_format` and `item_count`
 - `parse.min_slides`, `max_slides`, and word limits
-- `images.model` and `vibe`
+- `parse.provider`, Gemini/OpenAI models, and verification behavior
+- `images.provider`, models, quality, aspect ratio, and vibe
 - `compose.show_role_kicker` and `show_explanation`
 - `video.min_seconds`, `max_seconds`, audio, motion, and outro
+- `video.voiceover` enablement, Edge voice, rate, music volume, and failure mode
 - `youtube` and `instagram` publishing settings
 
 Subject categories remain flexible, while format-specific prompts control the
@@ -114,16 +120,30 @@ begin with a count from 4–12, such as `8 Coffee Drinks Explained`; otherwise i
 defaults to 5 items. Execution modes are `real` (default), `dry_run`, and `lite`.
 YouTube publishing defaults on and Instagram publishing defaults off.
 
+The scheduled queue workflow is the current unattended production path and
+exports both Gemini and OpenAI credentials. The older manual workflow currently
+exports only `OPENAI_API_KEY`; because the package text-provider default is now
+Gemini, its real/lite path needs `GEMINI_API_KEY` added to that workflow before
+it can use the current defaults.
+
+The package default for source and explainer generation is Gemini
+`gemini-3.6-flash`; OpenAI `gpt-5-mini` is an explicit alternative. The package
+default image path is OpenAI `gpt-image-1-mini` at low quality, while the example
+job template deliberately overrides images to Gemini/high quality. Providers do
+not automatically fall back to one another.
+
 For unattended production, `.github/workflows/produce-next-video.yml` checks a
-Google Sheet twice a day and processes one `pending` row. Every result is
+Google Sheet at 02:27 and 14:27 UTC and processes one `pending` row. Every result is
 uploaded as a YouTube Short; `youtube_public` selects public versus private, and
-Instagram remains opt-in. See
+Instagram remains opt-in. Voice-over defaults on and may be disabled with the
+optional `voiceover` Sheet column. See
 [`docs/GOOGLE_SHEETS_QUEUE.md`](docs/GOOGLE_SHEETS_QUEUE.md) for the exact
 columns, states, secrets, and setup.
 
 ## Publishing
 
-Publishing is disabled by default.
+Publishing is disabled in the general job template. Queue-created jobs always
+enable YouTube.
 
 - YouTube uploads a private Short by default; queue jobs may explicitly select
   public visibility.
@@ -137,7 +157,9 @@ Publishing is disabled by default.
 Local secrets live in `secrets/knowthebigpicture.secrets.json` or environment
 variables:
 
+- `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and optional `GEMINI_MODEL`
 - `OPENAI_API_KEY` and optional `OPENAI_MODEL`
+- optional `GEMINI_IMAGE_MODEL`
 - `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`
 - `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID`
 - `RCLONE_CONFIG`
@@ -145,6 +167,10 @@ variables:
 Know the Big Picture-specific environment variables use the `KBP_` prefix:
 `KBP_REMOTE_ROOT`, `KBP_RCLONE_BIN`, `KBP_JOBS_DIR`, `KBP_BRAND_STYLES`, and
 `KBP_SUBMIT_CREDS`.
+
+Narration uses Edge TTS and does not require an additional API secret. Package
+defaults are `en-US-EmmaNeural` at `+10%`; the example template uses
+`en-US-AndrewNeural` at `+0%`.
 
 See [`docs/DESIGN.md`](docs/DESIGN.md) for the canonical product and technical
 contract. See [`docs/CONTENT_FORMATS.md`](docs/CONTENT_FORMATS.md) for format
