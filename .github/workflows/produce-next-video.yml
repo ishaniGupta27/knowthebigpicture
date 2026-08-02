@@ -3,8 +3,8 @@ name: Produce Next Queued Video
 on:
   workflow_dispatch:
   schedule:
-    # 9:27 AM and 9:27 PM EST (10:27 AM/PM during EDT).
-    - cron: "27 2,14 * * *"
+    # Runs at 6:27 PM EDT (10:27 PM UTC) on Sun, Tue, Thu, Fri
+    - cron: "27 22 * * 0,2,4,5"
 
 permissions:
   contents: read
